@@ -58,6 +58,11 @@ class RunPayload(BaseModel):
     args: Optional[List[str]] = None
 
 
+class ExecutePayload(BaseModel):
+    content: str
+    name: Optional[str] = None
+
+
 async def require_user(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="missing_token")
@@ -176,6 +181,11 @@ async def tasks_run(payload: RunPayload, current_user: Dict[str, Any] = Depends(
         return storage.run_script(payload.path, payload.args)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/tasks/execute")
+async def tasks_execute(payload: ExecutePayload, current_user: Dict[str, Any] = Depends(require_user)):
+    return storage.execute_command_script(payload.content, payload.name)
 
 
 @app.get("/api/tasks/running")

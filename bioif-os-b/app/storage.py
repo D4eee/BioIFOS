@@ -180,3 +180,13 @@ def run_script(path: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
     thread = threading.Thread(target=_run_process, args=(task_id, str(script_path), log_path, args or []), daemon=True)
     thread.start()
     return payload
+
+
+def execute_command_script(content: str, name: Optional[str] = None) -> Dict[str, Any]:
+    base = name or f"workflow-{int(time.time())}"
+    safe = base.replace("/", "_").replace("\\", "_") or "workflow"
+    script_path = SCRIPTS_ROOT / f"{safe}.sh"
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    with script_path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(content)
+    return run_script(str(script_path))

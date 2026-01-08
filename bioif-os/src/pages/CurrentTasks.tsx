@@ -145,13 +145,38 @@ function buildCommandScript(options: {
   });
 
   const lines: string[] = [];
+  lines.push("#!/usr/bin/env bash");
   lines.push("# BIOIFOS_COMMAND_SCRIPT v1");
   lines.push(`# Script Name: ${SCRIPT_NAME_TOKEN}`);
   lines.push(`# Generated At: ${new Date().toISOString()}`);
-  lines.push("");
-  lines.push("# 1. Compiled curl commands");
+  lines.push("set -euo pipefail");
   lines.push(`BASE_DIR="${SCRIPT_NAME_TOKEN}"`);
+  lines.push('if [ -d "$BASE_DIR" ]; then');
+  lines.push('  idx=1');
+  lines.push('  while [ -d "${BASE_DIR}-${idx}" ]; do idx=$((idx+1)); done');
+  lines.push('  BASE_DIR="${BASE_DIR}-${idx}"');
+  lines.push("fi");
+  lines.push('mkdir -p "$BASE_DIR"');
   lines.push("");
+
+  const allFolders = new Set<string>();
+
+  orderedNodes.forEach((node) => {
+    const index = nodeIndex.get(node.id) ?? 0;
+    const folder = folderMap.get(node.id) ?? `${safeLabel(node.title || node.id)}${index}`;
+    allFolders.add(folder);
+    const inputIds = inputsByNode.get(node.id) ?? [];
+    const inputFolders = inputIds.map((id) => folderMap.get(id)).filter(Boolean) as string[];
+    inputFolders.forEach((f) => allFolders.add(f));
+  });
+
+  if (allFolders.size) {
+    lines.push("# Prepare folders");
+    Array.from(allFolders).forEach((folder) => {
+      lines.push(`mkdir -p "$BASE_DIR/${folder}"`);
+    });
+    lines.push("");
+  }
 
   orderedNodes.forEach((node) => {
     const index = nodeIndex.get(node.id) ?? 0;
@@ -174,45 +199,12 @@ function buildCommandScript(options: {
       : "curl \"\"";
 
     const displayName = displayNameMap.get(node.id) ?? (node.title || node.id);
-    lines.push(`# Node ${index}: ${displayName} (${node.id})`);
-    lines.push(`mkdir -p "$BASE_DIR"`);
-    inputFolders.forEach((input) => {
-      lines.push(`mkdir -p "$BASE_DIR/${input}"`);
-    });
-    lines.push(`mkdir -p "$BASE_DIR/${folder}"`);
+    lines.push(`# Node ${index + 1}: ${displayName}`);
     lines.push(`INPUT_DIRS="${inputFolders.map((input) => `$BASE_DIR/${input}`).join(",")}"`);
     lines.push(`OUTPUT_DIR="$BASE_DIR/${folder}"`);
-    if (!template) {
-      lines.push(`# WARNING: missing curl template for tool ${toolId}`);
-    }
-    lines.push(`# Command Source: ${displayName}`);
     lines.push(command);
     lines.push("");
   });
-
-  lines.push("# 2. Logic chain");
-  lines.push(
-    `# Order: ${orderedNodes
-      .map((node) => displayNameMap.get(node.id) ?? (node.title || node.id))
-      .join(" -> ")}`
-  );
-  lines.push("# Connections:");
-  connections.forEach((link) => {
-    const from = nodes.find((node) => node.id === link.fromId);
-    const to = nodes.find((node) => node.id === link.toId);
-    if (!from || !to) return;
-    const fromName = displayNameMap.get(from.id) ?? (from.title || from.id);
-    const toName = displayNameMap.get(to.id) ?? (to.title || to.id);
-    lines.push(`# ${fromName} -> ${toName}`);
-  });
-  lines.push("");
-
-  lines.push("# 3. Folder checks happen before each curl command above.");
-  lines.push("# 4. Execution order follows the logic chain and folder dependencies.");
-  lines.push("");
-  lines.push("# 5. Backup workflow payload");
-  lines.push(JSON.stringify(flow, null, 2));
-  lines.push("");
 
   return lines.join("\n");
 }

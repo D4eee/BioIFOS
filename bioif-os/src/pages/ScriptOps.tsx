@@ -135,7 +135,16 @@ export default function ScriptOps() {
           <div className="text-lg font-semibold text-zinc-900">脚本操作</div>
           <div className="text-xs text-zinc-500">{activeSummary ? "已载入脚本" : "新建脚本"}</div>
         </div>
-        {status && <div className="mt-2 text-xs text-zinc-600">{status}</div>}
+        <div className="mt-2 flex items-center justify-between text-xs text-zinc-600">
+          <div>{status}</div>
+          <button
+            type="button"
+            onClick={() => setRefreshToken((v) => v + 1)}
+            className="rounded-full border border-zinc-200 bg-white/80 px-3 py-1 text-[11px] text-zinc-600 hover:bg-white"
+          >
+            刷新列表
+          </button>
+        </div>
 
         <div
           className="mt-4 grid min-h-0 grid-cols-[280px_1fr] items-stretch gap-4"
