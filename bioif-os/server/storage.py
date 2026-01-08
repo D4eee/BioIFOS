@@ -520,7 +520,7 @@ def get_storage_root() -> str:
 
 
 def get_fs_root() -> str:
-    return os.getenv("BIOIFOS_FS_ROOT", str(DATA_DIR.resolve()))
+    return os.getenv("BIOIFOS_FS_ROOT", str(SHARED_DIR.resolve()))
 
 
 def list_fs(path: str | None) -> Dict[str, Any]:

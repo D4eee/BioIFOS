@@ -37,7 +37,6 @@ export default function FileManager() {
   const [serverARoot, setServerARoot] = useState("");
   const [serverBRoot, setServerBRoot] = useState("");
   const [contextMenu, setContextMenu] = useState<{ entry: FsEntry; x: number; y: number } | null>(null);
-  const [moveDialog, setMoveDialog] = useState<{ entry: FsEntry; target: string } | null>(null);
   const [message, setMessage] = useState("");
 
   const refreshEntries = () => {
@@ -147,14 +146,14 @@ export default function FileManager() {
     }
   };
 
-  const moveEntry = async (entry: FsEntry, target: string) => {
+  const moveEntryPath = async (path: string, target: string) => {
     if (!target.trim()) return;
     setMessage("");
     try {
       if (host === "A") {
-        await moveFs(entry.path, target.trim());
+        await moveFs(path, target.trim());
       } else {
-        await moveBfs(entry.path, target.trim());
+        await moveBfs(path, target.trim());
       }
       await refreshEntries();
       setMessage("移动成功。");
@@ -255,17 +254,41 @@ export default function FileManager() {
             <div>类型</div>
             <div>大小</div>
           </div>
-          <div className="max-h-[420px] overflow-auto">
+          <div
+            className="max-h-[420px] overflow-auto"
+            onDragOver={(e) => {
+              e.preventDefault();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const payload = e.dataTransfer.getData("application/x-bioifos-path");
+              if (!payload) return;
+              try {
+                const data = JSON.parse(payload) as { host: "A" | "B"; path: string };
+                if (data.host !== host) {
+                  setMessage("不能跨服务器移动。");
+                  return;
+                }
+                moveEntryPath(data.path, currentPath);
+              } catch {
+                setMessage("移动失败。");
+              }
+            }}
+          >
             {entries.length === 0 ? (
               <div className="px-4 py-6 text-sm text-zinc-500">该目录为空</div>
             ) : (
               entries.map((entry) => (
                 <div
                   key={entry.path}
-                  draggable={entry.kind === "file"}
+                  draggable
                   onDragStart={(e) => {
                     e.dataTransfer.setData("text/plain", entry.path);
-                    e.dataTransfer.effectAllowed = "copy";
+                    e.dataTransfer.setData(
+                      "application/x-bioifos-path",
+                      JSON.stringify({ host, path: entry.path }),
+                    );
+                    e.dataTransfer.effectAllowed = "move";
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
@@ -319,15 +342,6 @@ export default function FileManager() {
             复制文件地址
           </button>
           <button
-            className="w-full rounded-md px-2 py-1 text-left hover:bg-zinc-100"
-            onClick={() => {
-              setMoveDialog({ entry: contextMenu.entry, target: currentPath });
-              setContextMenu(null);
-            }}
-          >
-            移动
-          </button>
-          <button
             className="w-full rounded-md px-2 py-1 text-left text-rose-600 hover:bg-rose-50"
             onClick={() => {
               deleteEntry(contextMenu.entry);
@@ -336,37 +350,6 @@ export default function FileManager() {
           >
             删除
           </button>
-        </div>
-      )}
-
-      {moveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-[320px] rounded-2xl border border-zinc-200 bg-white p-4 text-xs text-zinc-700 shadow-xl">
-            <div className="mb-3 text-sm font-semibold">移动文件</div>
-            <input
-              value={moveDialog.target}
-              onChange={(e) => setMoveDialog({ ...moveDialog, target: e.target.value })}
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700 outline-none"
-              placeholder="输入目标路径"
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setMoveDialog(null)}
-                className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
-              >
-                取消
-              </button>
-              <button
-                onClick={() => {
-                  moveEntry(moveDialog.entry, moveDialog.target);
-                  setMoveDialog(null);
-                }}
-                className="rounded-full border border-sky-200 bg-sky-500/90 px-3 py-1 text-xs text-white hover:bg-sky-500"
-              >
-                确认
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
