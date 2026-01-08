@@ -237,6 +237,13 @@ export default function CurrentTasks() {
     originW: number;
     originH: number;
   } | null>(null);
+  const editorDragRef = useRef<{
+    nodeId: string;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
   const workspaceResizeRef = useRef<{ startY: number; origin: number } | null>(null);
 
   const [workflows, setWorkflows] = useState<SavedWorkflow[]>([]);
@@ -306,9 +313,11 @@ export default function CurrentTasks() {
         .catch(() => {});
     };
     const onFocus = () => reload();
+    const timer = window.setInterval(() => reload(), 3000);
     window.addEventListener("focus", onFocus);
     return () => {
       window.removeEventListener("focus", onFocus);
+      window.clearInterval(timer);
     };
   }, [activeFlowId]);
 
@@ -450,7 +459,7 @@ export default function CurrentTasks() {
         width: 320,
         height: 220,
         mode: "note",
-        paramMode: false,
+        paramMode: true,
       };
       setActiveNodeId(nodeId);
       return { ...prev, [nodeId]: next };
@@ -515,6 +524,19 @@ export default function CurrentTasks() {
       const panDrag = panRef.current;
       const resize = resizeRef.current;
       const click = clickRef.current;
+      const editorDrag = editorDragRef.current;
+
+      if (editorDrag) {
+        setEditors((prev) => ({
+          ...prev,
+          [editorDrag.nodeId]: {
+            ...prev[editorDrag.nodeId],
+            x: editorDrag.originX + (e.clientX - editorDrag.startX),
+            y: editorDrag.originY + (e.clientY - editorDrag.startY),
+          },
+        }));
+        return;
+      }
 
       if (panDrag) {
         setPan({
@@ -557,6 +579,7 @@ export default function CurrentTasks() {
       dragRef.current = null;
       panRef.current = null;
       resizeRef.current = null;
+      editorDragRef.current = null;
       clickRef.current = null;
     };
 
@@ -889,7 +912,19 @@ export default function CurrentTasks() {
                       height: editor.height,
                     }}
                   >
-                    <div className="flex items-center justify-between border-b border-white/60 px-3 py-2 text-xs text-zinc-600">
+                    <div
+                      className="flex items-center justify-between border-b border-white/60 px-3 py-2 text-xs text-zinc-600 cursor-move"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        editorDragRef.current = {
+                          nodeId: editor.nodeId,
+                          startX: e.clientX,
+                          startY: e.clientY,
+                          originX: editor.x,
+                          originY: editor.y,
+                        };
+                      }}
+                    >
                       <div className="font-semibold text-zinc-800">{title}</div>
                       <div className="flex items-center gap-2">
                         <button
