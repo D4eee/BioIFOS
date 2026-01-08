@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+:root {
+  --app-bg: #0b1120;
+  --app-text: #e2e8f0;
+}
+
+:root[data-theme="mist"] {
+  --app-bg: #f1f5f9;
+  --app-text: #0f172a;
+}
+
+:root[data-theme="amber"] {
+  --app-bg: #2a1b0b;
+  --app-text: #f8fafc;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--app-text);
+}

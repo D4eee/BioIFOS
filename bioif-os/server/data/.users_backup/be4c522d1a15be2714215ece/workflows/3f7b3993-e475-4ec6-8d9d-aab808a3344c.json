@@ -1,0 +1,48 @@
+{
+  "id": "3f7b3993-e475-4ec6-8d9d-aab808a3344c",
+  "name": "\u5b9e\u9a8c\u6d41\u7a0b",
+  "createdAt": 1767774067465,
+  "order": [
+    "cc104a7c461d3819b978b94d3",
+    "4f2f58daf592619b978b94d3",
+    "171ff528414c19b978b94d3"
+  ],
+  "nodes": [
+    {
+      "id": "cc104a7c461d3819b978b94d3",
+      "toolId": "exp-print-1",
+      "title": "\u5b9e\u9a8c\u8282\u70b9 1",
+      "x": 120,
+      "y": 120,
+      "color": "#64748b"
+    },
+    {
+      "id": "4f2f58daf592619b978b94d3",
+      "toolId": "exp-print-2",
+      "title": "\u5b9e\u9a8c\u8282\u70b9 2",
+      "x": 360,
+      "y": 120,
+      "color": "#475569"
+    },
+    {
+      "id": "171ff528414c19b978b94d3",
+      "toolId": "exp-print-3",
+      "title": "\u5b9e\u9a8c\u8282\u70b9 3",
+      "x": 600,
+      "y": 120,
+      "color": "#1f2937"
+    }
+  ],
+  "connections": [
+    {
+      "id": "83062bb66d54b19b978b94d3",
+      "fromId": "cc104a7c461d3819b978b94d3",
+      "toId": "4f2f58daf592619b978b94d3"
+    },
+    {
+      "id": "1f72f116d6cb4819b978b94d3",
+      "fromId": "4f2f58daf592619b978b94d3",
+      "toId": "171ff528414c19b978b94d3"
+    }
+  ]
+}

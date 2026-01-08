@@ -1,0 +1,36 @@
+{
+  "id": "26388f74-35a5-465d-b6bb-79c5702713a8",
+  "name": "test1",
+  "createdAt": 1767809888032,
+  "order": [
+    "4d356662c34be19b99add99f",
+    "ecae5e48c5fdf819b99adf6ba"
+  ],
+  "nodes": [
+    {
+      "id": "4d356662c34be19b99add99f",
+      "toolId": "dimplot",
+      "title": "DimPlot",
+      "x": 120,
+      "y": 98,
+      "color": "#7dd3fc",
+      "collapsed": false
+    },
+    {
+      "id": "ecae5e48c5fdf819b99adf6ba",
+      "toolId": "dimplot",
+      "title": "DimPlot",
+      "x": 371,
+      "y": 102,
+      "color": "#7dd3fc",
+      "collapsed": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "32d39d7d60c98819b99ae01a9",
+      "fromId": "4d356662c34be19b99add99f",
+      "toId": "ecae5e48c5fdf819b99adf6ba"
+    }
+  ]
+}

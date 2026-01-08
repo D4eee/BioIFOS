@@ -1,0 +1,19 @@
+{
+  "id": "test",
+  "name": "测试",
+  "paramCount": 1,
+  "curlTemplate": "print({{参数}})",
+  "description": "测试工具",
+  "paramDescription": "参数：输出内容",
+  "params": [
+    {
+      "key": "参数",
+      "label": "参数",
+      "type": "text",
+      "color": "#64748b",
+      "default": "",
+      "required": false
+    }
+  ],
+  "path": "/data/shared/nodes"
+}

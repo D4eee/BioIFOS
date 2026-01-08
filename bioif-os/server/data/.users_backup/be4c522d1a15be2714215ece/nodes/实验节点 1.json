@@ -1,0 +1,19 @@
+{
+  "id": "exp-print-1",
+  "name": "\u5b9e\u9a8c\u8282\u70b9 1",
+  "paramCount": 1,
+  "curlTemplate": "print({{\u53c2\u65701}})",
+  "description": "\u5b9e\u9a8c\u8282\u70b9\uff1a\u6253\u5370\u53c2\u65701",
+  "paramDescription": "\u53c2\u65701\uff1a\u6253\u5370\u5185\u5bb9",
+  "params": [
+    {
+      "key": "\u53c2\u65701",
+      "label": "\u53c2\u65701",
+      "type": "text",
+      "color": "#60a5fa",
+      "default": "",
+      "required": false
+    }
+  ],
+  "path": "/data/tools/experiment"
+}

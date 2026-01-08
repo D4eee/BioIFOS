@@ -1,0 +1,51 @@
+{
+  "name": "DimPlot",
+  "paramCount": 5,
+  "curlTemplate": "DimPlot(Part_all_2, reduction = \"{{VariP:Va1}}\", label = {{VariP:Va2}}, pt.size = {{VariP:Va3}}, raster={{VariP:Va4}}, label.size = {{VariP:Va5}})",
+  "description": "abc",
+  "paramDescription": "12345",
+  "params": [
+    {
+      "key": "Va1",
+      "label": "Va1",
+      "type": "text",
+      "color": "#64748b",
+      "default": "tsne",
+      "required": false
+    },
+    {
+      "key": "Va2",
+      "label": "Va2",
+      "type": "boolean",
+      "color": "#64748b",
+      "default": "TRUE",
+      "required": false
+    },
+    {
+      "key": "Va3",
+      "label": "Va3",
+      "type": "number",
+      "color": "#64748b",
+      "default": "0.3",
+      "required": false
+    },
+    {
+      "key": "Va4",
+      "label": "Va4",
+      "type": "text",
+      "color": "#64748b",
+      "default": "FALSE",
+      "required": false
+    },
+    {
+      "key": "Va5",
+      "label": "Va5",
+      "type": "number",
+      "color": "#64748b",
+      "default": "8",
+      "required": false
+    }
+  ],
+  "path": "/data/shared/nodes",
+  "id": "dimplot"
+}
