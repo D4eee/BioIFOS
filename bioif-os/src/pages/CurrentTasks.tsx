@@ -229,7 +229,6 @@ export default function CurrentTasks() {
   const scaleRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
   const panRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
-  const clickRef = useRef<{ id: string; startX: number; startY: number; moved: boolean } | null>(null);
   const resizeRef = useRef<{
     nodeId: string;
     startX: number;
@@ -523,7 +522,6 @@ export default function CurrentTasks() {
       const drag = dragRef.current;
       const panDrag = panRef.current;
       const resize = resizeRef.current;
-      const click = clickRef.current;
       const editorDrag = editorDragRef.current;
 
       if (editorDrag) {
@@ -558,14 +556,6 @@ export default function CurrentTasks() {
 
       if (!drag) return;
 
-      if (click) {
-        const dx = e.clientX - click.startX;
-        const dy = e.clientY - click.startY;
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-          click.moved = true;
-        }
-      }
-
       const world = toWorld(e.clientX, e.clientY);
       const nextX = world.x - drag.offsetX;
       const nextY = world.y - drag.offsetY;
@@ -573,14 +563,10 @@ export default function CurrentTasks() {
     };
 
     const onUp = () => {
-      if (clickRef.current && !clickRef.current.moved) {
-        toggleEditor(clickRef.current.id);
-      }
       dragRef.current = null;
       panRef.current = null;
       resizeRef.current = null;
       editorDragRef.current = null;
-      clickRef.current = null;
     };
 
     window.addEventListener("mousemove", onMove);
@@ -791,8 +777,32 @@ export default function CurrentTasks() {
           </div>
 
           <div className="flex h-full flex-col">
-            <div className="mb-3 flex items-center rounded-full border border-white/50 bg-white/70 px-3 py-2 text-xs text-zinc-600 shadow-sm">
-              {activeName}
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex-1 rounded-full border border-white/50 bg-white/70 px-3 py-2 text-xs text-zinc-600 shadow-sm">
+                {activeName}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  listWorkflows()
+                    .then((data) => {
+                      setWorkflows(data as SavedWorkflow[]);
+                      if (!activeFlowId && data[0]?.id) setActiveFlowId(data[0].id);
+                    })
+                    .catch(() => {});
+                  if (activeFlowId) {
+                    getWorkflow(activeFlowId)
+                      .then((flow) => {
+                        setNodes((flow.nodes as NodeItem[]) ?? []);
+                        setConnections((flow.connections as Connection[]) ?? []);
+                      })
+                      .catch(() => {});
+                  }
+                }}
+                className="rounded-full border border-zinc-200 bg-white/80 px-3 py-1 text-xs text-zinc-600 hover:bg-white"
+              >
+                刷新
+              </button>
             </div>
             <div
               ref={canvasRef}
@@ -866,12 +876,10 @@ export default function CurrentTasks() {
                           offsetX: world.x - node.x,
                           offsetY: world.y - node.y,
                         };
-                        clickRef.current = {
-                          id: node.id,
-                          startX: e.clientX,
-                          startY: e.clientY,
-                          moved: false,
-                        };
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleEditor(node.id);
                       }}
                     >
                       <div className="group relative">
@@ -954,8 +962,8 @@ export default function CurrentTasks() {
                         ? renderParamEditor(editor.nodeId)
                         : renderEditorBody(editor.nodeId, editor.mode)}
                     </div>
-                    <div className="flex items-center justify-between border-t border-white/60 px-3 py-1 text-[10px] text-zinc-500">
-                      <div>
+                    <div className="relative flex items-center border-t border-white/60 px-3 py-1 text-[10px] text-zinc-500">
+                      <div className="mx-auto">
                         {editor.paramMode
                           ? "参数编辑"
                           : editor.mode === "note"
@@ -966,7 +974,7 @@ export default function CurrentTasks() {
                       </div>
                       {!editor.paramMode && (
                         <button
-                          className="rounded-full border border-zinc-200 p-1 text-zinc-500 hover:bg-zinc-50"
+                          className="absolute right-3 rounded-full border border-zinc-200 p-1 text-zinc-500 hover:bg-zinc-50"
                           onClick={() =>
                             setEditors((prev) => ({
                               ...prev,
