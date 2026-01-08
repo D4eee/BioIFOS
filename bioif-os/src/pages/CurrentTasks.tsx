@@ -458,7 +458,7 @@ export default function CurrentTasks() {
         y: screenY - canvasBounds.top + 24,
         width: 320,
         height: 220,
-        mode: "note",
+        mode: "params",
         paramMode: true,
       };
       setActiveNodeId(nodeId);
@@ -911,6 +911,7 @@ export default function CurrentTasks() {
                       width: editor.width,
                       height: editor.height,
                     }}
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     <div
                       className="flex items-center justify-between border-b border-white/60 px-3 py-2 text-xs text-zinc-600 cursor-move"
