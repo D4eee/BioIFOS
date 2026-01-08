@@ -72,7 +72,6 @@ function usageColor(value: number) {
 
 export default function ResultsTerminal() {
   const [source, setSource] = useState<SourceType>("实时终端");
-  const [query, setQuery] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
   const [command, setCommand] = useState("");
   const [terminalOutput, setTerminalOutput] = useState("");

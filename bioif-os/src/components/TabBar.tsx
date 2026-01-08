@@ -12,6 +12,7 @@ import {
   TerminalSquare,
   Settings as SettingsIcon,
   User,
+  FileSearch,
 } from "lucide-react";
 
 import {
@@ -32,6 +33,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const TAB_ICONS: Record<AppPageType, React.FC<{ className?: string }>> = {
   fileManager: Folder,
+  filePreview: FileSearch,
   toolBuilder: Hammer,
   toolSelect: Network,
   currentTasks: Activity,
@@ -144,7 +146,7 @@ export default function TabBar({
   onClose: (id: string) => void;
   onReorder: (tabs: AppTab[]) => void;
   onDetach: (id: string, point: { x: number; y: number }) => void;
-  outerRef?: React.RefObject<HTMLDivElement>;
+  outerRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const barRef = useRef<HTMLDivElement | null>(null);

@@ -4,7 +4,6 @@ import {
   listWorkflows,
   getWorkflow,
   createWorkflow,
-  updateWorkflow,
   deleteWorkflow,
   listTools,
   getFavorites,

@@ -15,7 +15,7 @@ import ToolBuilder from "@/pages/ToolBuilder";
 import ResultsTerminal from "@/pages/ResultsTerminal";
 import Settings from "@/pages/Settings";
 import Account from "@/pages/Account";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Auth from "@/pages/Auth";
 import { authMe, clearAuthToken, type AuthUser } from "@/app/api";
 import { AppSettingsProvider, useAppSettings } from "@/app/useAppSettings";

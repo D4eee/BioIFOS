@@ -15,7 +15,7 @@ export default function Auth({ onAuth }: Props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
-  const [status, setStatus] = useState(STATUS.idle);
+  const [status, setStatus] = useState<string>(STATUS.idle);
   const [error, setError] = useState("");
 
   const submit = (e: React.FormEvent) => {

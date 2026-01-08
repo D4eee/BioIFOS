@@ -46,5 +46,5 @@ export function getSidebarItems(language: Language) {
     { type: "filePreview", label: titles.filePreview },
     { type: "settings", label: titles.settings },
     { type: "account", label: titles.account },
-  ];
+  ] satisfies { type: AppPageType; label: string }[];
 }

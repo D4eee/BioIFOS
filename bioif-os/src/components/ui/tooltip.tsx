@@ -9,16 +9,14 @@ export function Tooltip({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export function TooltipTrigger({ asChild, children }: { asChild?: boolean; children: React.ReactNode }) {
+export function TooltipTrigger({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
 export function TooltipContent({
-  side = "right",
   className,
   children,
 }: {
-  side?: "right" | "left" | "top" | "bottom";
   className?: string;
   children: React.ReactNode;
 }) {
@@ -34,4 +32,3 @@ export function TooltipContent({
     </div>
   );
 }
-

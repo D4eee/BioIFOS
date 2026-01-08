@@ -35,8 +35,8 @@ export default function FloatingWindows({
   renderContent,
 }: {
   windows: FloatingWindow[];
-  boundsRef: RefObject<HTMLDivElement>;
-  dockRef: RefObject<HTMLDivElement>;
+  boundsRef: RefObject<HTMLDivElement | null>;
+  dockRef: RefObject<HTMLDivElement | null>;
   droppedRefs: Record<string, string[]>;
   onFocus: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
