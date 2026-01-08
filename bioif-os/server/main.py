@@ -326,6 +326,22 @@ async def list_fs(path: Optional[str] = None, current_user: Dict[str, Any] = Dep
     return storage.list_fs(path)
 
 
+@app.post("/api/fs/delete")
+async def delete_fs(payload: BfsPathPayload, current_user: Dict[str, Any] = Depends(require_user)):
+    data = storage.delete_fs(payload.path)
+    if not data:
+        raise HTTPException(status_code=404, detail="not_found")
+    return data
+
+
+@app.post("/api/fs/move")
+async def move_fs(payload: BfsMovePayload, current_user: Dict[str, Any] = Depends(require_user)):
+    data = storage.move_fs(payload.src, payload.dst)
+    if not data:
+        raise HTTPException(status_code=404, detail="not_found")
+    return data
+
+
 @app.post("/api/commands")
 async def create_command_script(
     payload: CommandScriptPayload, current_user: Dict[str, Any] = Depends(require_user)

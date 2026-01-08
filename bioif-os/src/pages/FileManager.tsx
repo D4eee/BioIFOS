@@ -10,7 +10,7 @@ import {
   Server,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { getFsRoot, listFs, getBfsRoot, listBfs } from "@/app/api";
+import { getFsRoot, listFs, getBfsRoot, listBfs, deleteFs, moveFs, deleteBfs, moveBfs } from "@/app/api";
 
 type FsEntry = {
   name: string;
@@ -36,33 +36,33 @@ export default function FileManager() {
   const [entries, setEntries] = useState<FsEntry[]>([]);
   const [serverARoot, setServerARoot] = useState("");
   const [serverBRoot, setServerBRoot] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ entry: FsEntry; x: number; y: number } | null>(null);
+  const [moveDialog, setMoveDialog] = useState<{ entry: FsEntry; target: string } | null>(null);
+  const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    let active = true;
+  const refreshEntries = () => {
     if (host === "A") {
-      listFs(currentPath)
+      return listFs(currentPath)
         .then((data) => {
-          if (!active) return;
           setEntries(data.entries ?? []);
           if (data.path) setPaths((prev) => ({ ...prev, A: data.path }));
         })
         .catch(() => {
-          if (active) setEntries([]);
-        });
-    } else {
-      listBfs(currentPath)
-        .then((data) => {
-          if (!active) return;
-          setEntries(data.entries ?? []);
-          if (data.path) setPaths((prev) => ({ ...prev, B: data.path }));
-        })
-        .catch(() => {
-          if (active) setEntries([]);
+          setEntries([]);
         });
     }
-    return () => {
-      active = false;
-    };
+    return listBfs(currentPath)
+      .then((data) => {
+        setEntries(data.entries ?? []);
+        if (data.path) setPaths((prev) => ({ ...prev, B: data.path }));
+      })
+      .catch(() => {
+        setEntries([]);
+      });
+  };
+
+  useEffect(() => {
+    refreshEntries().catch(() => {});
   }, [currentPath, host]);
 
   useEffect(() => {
@@ -114,6 +114,55 @@ export default function FileManager() {
     setPaths((prev) => ({ ...prev, [host]: path }));
   };
 
+  useEffect(() => {
+    if (!contextMenu) return;
+    const onDown = () => setContextMenu(null);
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [contextMenu]);
+
+  const copyPath = async (path: string) => {
+    setMessage("");
+    try {
+      await navigator.clipboard.writeText(path);
+      setMessage("已复制路径。");
+    } catch {
+      window.prompt("复制路径", path);
+    }
+  };
+
+  const deleteEntry = async (entry: FsEntry) => {
+    if (!window.confirm(`确定删除 ${entry.name} 吗？`)) return;
+    setMessage("");
+    try {
+      if (host === "A") {
+        await deleteFs(entry.path);
+      } else {
+        await deleteBfs(entry.path);
+      }
+      await refreshEntries();
+      setMessage("删除成功。");
+    } catch {
+      setMessage("删除失败。");
+    }
+  };
+
+  const moveEntry = async (entry: FsEntry, target: string) => {
+    if (!target.trim()) return;
+    setMessage("");
+    try {
+      if (host === "A") {
+        await moveFs(entry.path, target.trim());
+      } else {
+        await moveBfs(entry.path, target.trim());
+      }
+      await refreshEntries();
+      setMessage("移动成功。");
+    } catch {
+      setMessage("移动失败。");
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-zinc-300/70 bg-gradient-to-br from-white via-white to-zinc-100 p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
@@ -133,6 +182,7 @@ export default function FileManager() {
           </button>
         </div>
       </div>
+      {message && <div className="mt-2 text-xs text-zinc-600">{message}</div>}
 
       <div className="mt-3 flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm">
         <HardDrive className="h-4 w-4 text-zinc-500" />
@@ -217,6 +267,10 @@ export default function FileManager() {
                     e.dataTransfer.setData("text/plain", entry.path);
                     e.dataTransfer.effectAllowed = "copy";
                   }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setContextMenu({ entry, x: e.clientX, y: e.clientY });
+                  }}
                   onDoubleClick={() => {
                     if (entry.kind === "dir") setCurrentPath(entry.path);
                   }}
@@ -248,6 +302,73 @@ export default function FileManager() {
           </div>
         </div>
       </div>
+
+      {contextMenu && (
+        <div
+          className="fixed z-50 w-40 rounded-xl border border-zinc-200 bg-white p-1 text-xs text-zinc-700 shadow-xl"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full rounded-md px-2 py-1 text-left hover:bg-zinc-100"
+            onClick={() => {
+              copyPath(contextMenu.entry.path);
+              setContextMenu(null);
+            }}
+          >
+            复制文件地址
+          </button>
+          <button
+            className="w-full rounded-md px-2 py-1 text-left hover:bg-zinc-100"
+            onClick={() => {
+              setMoveDialog({ entry: contextMenu.entry, target: currentPath });
+              setContextMenu(null);
+            }}
+          >
+            移动
+          </button>
+          <button
+            className="w-full rounded-md px-2 py-1 text-left text-rose-600 hover:bg-rose-50"
+            onClick={() => {
+              deleteEntry(contextMenu.entry);
+              setContextMenu(null);
+            }}
+          >
+            删除
+          </button>
+        </div>
+      )}
+
+      {moveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="w-[320px] rounded-2xl border border-zinc-200 bg-white p-4 text-xs text-zinc-700 shadow-xl">
+            <div className="mb-3 text-sm font-semibold">移动文件</div>
+            <input
+              value={moveDialog.target}
+              onChange={(e) => setMoveDialog({ ...moveDialog, target: e.target.value })}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700 outline-none"
+              placeholder="输入目标路径"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setMoveDialog(null)}
+                className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-500 hover:bg-zinc-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  moveEntry(moveDialog.entry, moveDialog.target);
+                  setMoveDialog(null);
+                }}
+                className="rounded-full border border-sky-200 bg-sky-500/90 px-3 py-1 text-xs text-white hover:bg-sky-500"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

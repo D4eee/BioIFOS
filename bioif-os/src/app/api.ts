@@ -191,6 +191,20 @@ export function listFs(path: string) {
   return requestJson<FsListing>(`/fs/list${query}`);
 }
 
+export function deleteFs(path: string) {
+  return requestJson<{ ok: true; path: string }>("/fs/delete", {
+    method: "POST",
+    body: JSON.stringify({ path }),
+  });
+}
+
+export function moveFs(src: string, dst: string) {
+  return requestJson<{ ok: true; path: string }>("/fs/move", {
+    method: "POST",
+    body: JSON.stringify({ src, dst }),
+  });
+}
+
 export function getBfsRoot() {
   return requestJson<{ root: string }>("/bfs/root");
 }

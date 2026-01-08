@@ -4,8 +4,8 @@ import json
 import os
 import time
 import uuid
+import shutil
 from pathlib import Path
-import os
 import datetime
 from typing import Any, Dict, List, Optional
 
@@ -550,3 +550,56 @@ def list_fs(path: str | None) -> Dict[str, Any]:
             }
         )
     return {"path": str(target), "entries": entries}
+
+
+def _normalize_fs_path(path: str | None) -> Path | None:
+    if not path:
+        return None
+    root = Path(get_fs_root()).resolve()
+    target = Path(path).resolve()
+    if not str(target).startswith(str(root)):
+        return None
+    return target
+
+
+def _unique_fs_path(target: Path) -> Path:
+    if not target.exists():
+        return target
+    stem = target.stem or target.name
+    suffix = target.suffix if target.is_file() else ""
+    parent = target.parent
+    counter = 1
+    while True:
+        candidate = parent / f"{stem}-{counter}{suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+def delete_fs(path: str) -> Dict[str, Any] | None:
+    target = _normalize_fs_path(path)
+    if not target or not target.exists():
+        return None
+    try:
+        if target.is_dir():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+    except OSError:
+        return None
+    return {"ok": True, "path": str(target)}
+
+
+def move_fs(src: str, dst: str) -> Dict[str, Any] | None:
+    source = _normalize_fs_path(src)
+    target = _normalize_fs_path(dst)
+    if not source or not source.exists() or not target:
+        return None
+    try:
+        if target.exists() and target.is_dir():
+            target = target / source.name
+        target = _unique_fs_path(target)
+        shutil.move(str(source), str(target))
+    except OSError:
+        return None
+    return {"ok": True, "path": str(target)}
