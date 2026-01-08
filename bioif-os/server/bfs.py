@@ -26,6 +26,19 @@ def _config(auth: Optional[Dict[str, str]] = None) -> Tuple[str, int, str, str, 
         password = auth.get("pass") or password
         key = auth.get("key", "")
         key_pass = auth.get("keyPass", "")
+    frp_addr = os.getenv("BIOIFOS_B_FRP_ADDR", "")
+    frp_port = os.getenv("BIOIFOS_B_FRP_PORT", "")
+    frp_enabled = os.getenv("BIOIFOS_B_FRP_ENABLED", "").lower() in {"1", "true", "yes"}
+    if (frp_enabled or frp_addr or frp_port) and frp_addr:
+        # 支持 tcp://x.x.x.x:7000 或 x.x.x.x:7000
+        addr = frp_addr.replace("tcp://", "").replace("http://", "").replace("https://", "")
+        if ":" in addr:
+            frp_host, frp_port_str = addr.rsplit(":", 1)
+            host = frp_host or host
+            port = int(frp_port_str) if frp_port_str.isdigit() else port
+    if (frp_enabled or frp_port) and frp_port.isdigit():
+        port = int(frp_port)
+
     if not host or not user:
         raise RuntimeError("bfs_not_configured")
     if not key and not password:
