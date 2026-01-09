@@ -19,7 +19,7 @@ export type ToolMeta = {
   params: {
     key: string;
     label: string;
-    type: "text" | "number" | "boolean" | "path";
+    type: "text" | "number" | "boolean" | "path" | "file_in" | "file_out";
     color: string;
     default: string;
     required: boolean;

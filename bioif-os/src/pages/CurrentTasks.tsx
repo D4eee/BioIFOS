@@ -17,6 +17,8 @@ type NodeItem = {
   title: string;
   x: number;
   y: number;
+  inputFolder?: string;
+  outputFolder?: string;
 };
 
 type Connection = {
@@ -56,6 +58,56 @@ function safeLabel(value: string) {
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "");
   return cleaned || "node";
+}
+
+function normalizeFolderName(value?: string) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function buildFolderMaps(nodes: NodeItem[], connections: Connection[], order: string[]) {
+  const orderedNodes = buildNodeOrder(nodes, connections, order ?? []);
+  const nodeIndex = new Map(orderedNodes.map((node, idx) => [node.id, idx + 1]));
+  const titleCounts = new Map<string, number>();
+  const displayNameMap = new Map<string, string>();
+  const folderMap = new Map<string, string>();
+
+  orderedNodes.forEach((node) => {
+    const base = node.title || node.id;
+    const count = (titleCounts.get(base) ?? 0) + 1;
+    titleCounts.set(base, count);
+    const displayName = count > 1 ? `${base}-${count}` : base;
+    displayNameMap.set(node.id, displayName);
+    const index = nodeIndex.get(node.id) ?? 0;
+    const customOutput = normalizeFolderName(node.outputFolder);
+    folderMap.set(node.id, customOutput ?? `${safeLabel(base)}${index}`);
+  });
+
+  const inputsByNode = new Map<string, string[]>();
+  connections.forEach((link) => {
+    if (!folderMap.has(link.fromId) || !folderMap.has(link.toId)) return;
+    const list = inputsByNode.get(link.toId) ?? [];
+    list.push(link.fromId);
+    inputsByNode.set(link.toId, list);
+  });
+
+  return { orderedNodes, nodeIndex, displayNameMap, folderMap, inputsByNode };
+}
+
+function collectInputFolders(
+  node: NodeItem,
+  inputsByNode: Map<string, string[]>,
+  folderMap: Map<string, string>,
+) {
+  const inputIds = inputsByNode.get(node.id) ?? [];
+  const inputFoldersFromLinks = inputIds.map((id) => folderMap.get(id)).filter(Boolean) as string[];
+  const manualInput = normalizeFolderName(node.inputFolder);
+  const inputFolders = manualInput ? [manualInput, ...inputFoldersFromLinks] : inputFoldersFromLinks;
+  return Array.from(new Set(inputFolders));
+}
+
+function formatInputDirs(inputFolders: string[]) {
+  return inputFolders.map((input) => `$BASE_DIR/${input}`).join(",");
 }
 
 function buildNodeOrder(nodes: NodeItem[], connections: Connection[], order: string[]) {
@@ -121,28 +173,11 @@ function buildCommandScript(options: {
   paramValues: Record<string, Record<string, string>>;
 }) {
   const { flow, nodes, connections, toolMetaMap, drafts, paramValues } = options;
-  const orderedNodes = buildNodeOrder(nodes, connections, flow.order ?? []);
-  const nodeIndex = new Map(orderedNodes.map((node, idx) => [node.id, idx + 1]));
-  const titleCounts = new Map<string, number>();
-  const displayNameMap = new Map<string, string>();
-  const folderMap = new Map<string, string>();
-  orderedNodes.forEach((node) => {
-    const base = node.title || node.id;
-    const count = (titleCounts.get(base) ?? 0) + 1;
-    titleCounts.set(base, count);
-    const displayName = count > 1 ? `${base}-${count}` : base;
-    displayNameMap.set(node.id, displayName);
-    const index = nodeIndex.get(node.id) ?? 0;
-    folderMap.set(node.id, `${safeLabel(base)}${index}`);
-  });
-
-  const inputsByNode = new Map<string, string[]>();
-  connections.forEach((link) => {
-    if (!folderMap.has(link.fromId) || !folderMap.has(link.toId)) return;
-    const list = inputsByNode.get(link.toId) ?? [];
-    list.push(link.fromId);
-    inputsByNode.set(link.toId, list);
-  });
+  const { orderedNodes, nodeIndex, displayNameMap, folderMap, inputsByNode } = buildFolderMaps(
+    nodes,
+    connections,
+    flow.order ?? [],
+  );
 
   const lines: string[] = [];
   lines.push("#!/usr/bin/env bash");
@@ -165,8 +200,7 @@ function buildCommandScript(options: {
     const index = nodeIndex.get(node.id) ?? 0;
     const folder = folderMap.get(node.id) ?? `${safeLabel(node.title || node.id)}${index}`;
     allFolders.add(folder);
-    const inputIds = inputsByNode.get(node.id) ?? [];
-    const inputFolders = inputIds.map((id) => folderMap.get(id)).filter(Boolean) as string[];
+    const inputFolders = collectInputFolders(node, inputsByNode, folderMap);
     inputFolders.forEach((f) => allFolders.add(f));
   });
 
@@ -178,11 +212,14 @@ function buildCommandScript(options: {
     lines.push("");
   }
 
+  lines.push("# Execution order confirmed by connections");
+  lines.push("");
+
   orderedNodes.forEach((node) => {
     const index = nodeIndex.get(node.id) ?? 0;
     const folder = folderMap.get(node.id) ?? `${safeLabel(node.title || node.id)}${index}`;
-    const inputIds = inputsByNode.get(node.id) ?? [];
-    const inputFolders = inputIds.map((id) => folderMap.get(id)).filter(Boolean) as string[];
+    const inputFolders = collectInputFolders(node, inputsByNode, folderMap);
+    const inputDirsValue = formatInputDirs(inputFolders);
     const toolId = node.toolId;
     const meta = toolMetaMap[toolId];
     const draft = drafts[toolId];
@@ -191,7 +228,14 @@ function buildCommandScript(options: {
     const params = meta?.params ?? [];
     const command = template
       ? params.reduce((acc, param) => {
-          const value = values[param.key] ?? param.default ?? "";
+          const value =
+            param.type === "file_in"
+              ? inputDirsValue
+                ? "$INPUT_DIRS"
+                : ""
+              : param.type === "file_out"
+                ? "$OUTPUT_DIR"
+                : values[param.key] ?? param.default ?? "";
           return acc
             .replaceAll(`{{${PARAM_PREFIX}${param.key}}}`, value)
             .replaceAll(`{{${param.key}}}`, value);
@@ -200,7 +244,7 @@ function buildCommandScript(options: {
 
     const displayName = displayNameMap.get(node.id) ?? (node.title || node.id);
     lines.push(`# Node ${index + 1}: ${displayName}`);
-    lines.push(`INPUT_DIRS="${inputFolders.map((input) => `$BASE_DIR/${input}`).join(",")}"`);
+    lines.push(`INPUT_DIRS="${inputDirsValue}"`);
     lines.push(`OUTPUT_DIR="$BASE_DIR/${folder}"`);
     lines.push(command);
     lines.push("");
@@ -626,9 +670,20 @@ export default function CurrentTasks() {
     if (!meta) return <div className="text-xs text-zinc-500">未加载参数信息</div>;
     const values = paramValues[nodeId] ?? {};
     const inputs = meta.params ?? [];
+    const inputFolders = folderContext
+      ? collectInputFolders(node, folderContext.inputsByNode, folderContext.folderMap)
+      : [];
+    const inputDirsValue = formatInputDirs(inputFolders);
+    const outputFolder = folderContext?.folderMap.get(node.id) ?? "";
+    const outputDirValue = outputFolder ? `$BASE_DIR/${outputFolder}` : "";
     const command = meta.curlTemplate
       ? inputs.reduce((acc, param) => {
-          const value = values[param.key] ?? param.default ?? "";
+          const value =
+            param.type === "file_in"
+              ? inputDirsValue
+              : param.type === "file_out"
+                ? outputDirValue
+                : values[param.key] ?? param.default ?? "";
           return acc
             .replaceAll(`{{${PARAM_PREFIX}${param.key}}}`, value)
             .replaceAll(`{{${param.key}}}`, value);
@@ -639,11 +694,22 @@ export default function CurrentTasks() {
         <div className="flex flex-wrap gap-3">
           {inputs.length === 0 && <div className="text-zinc-500">当前工具暂无可调参数</div>}
           {inputs.map((param) => {
-            const previewValue = values[param.key] ?? param.default ?? "";
+            const isFileInput = param.type === "file_in";
+            const isFileOutput = param.type === "file_out";
+            const previewValue = isFileInput
+              ? inputDirsValue
+              : isFileOutput
+                ? outputDirValue
+                : values[param.key] ?? param.default ?? "";
             const widthCh = Math.max(6, previewValue.length || 1);
             return (
               <label key={param.key} className="flex items-center gap-2">
                 <span className="text-[10px] text-zinc-500">{param.label || param.key}</span>
+                {(isFileInput || isFileOutput) && (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] text-amber-600">
+                    {isFileInput ? "文件输入" : "文件输出"}
+                  </span>
+                )}
                 <input
                   type={param.type === "number" ? "number" : "text"}
                   value={previewValue}
@@ -653,9 +719,15 @@ export default function CurrentTasks() {
                       [nodeId]: { ...(prev[nodeId] ?? {}), [param.key]: e.target.value },
                     }))
                   }
+                  readOnly={isFileInput || isFileOutput}
                   size={widthCh}
                   style={{ width: `calc(${widthCh}ch + 16px)` }}
-                  className="h-8 rounded-full border border-zinc-200 bg-white px-3 text-xs text-zinc-700 outline-none"
+                  className={[
+                    "h-8 rounded-full border px-3 text-xs outline-none",
+                    isFileInput || isFileOutput
+                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                      : "border-zinc-200 bg-white text-zinc-700",
+                  ].join(" ")}
                 />
               </label>
             );
@@ -693,6 +765,10 @@ export default function CurrentTasks() {
   const LABEL_OFFSET = 20;
   const radius = CIRCLE_SIZE / 2;
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+  const folderContext = useMemo(() => {
+    if (!activeFlow) return null;
+    return buildFolderMaps(nodes, connections, activeFlow.order ?? []);
+  }, [activeFlow, nodes, connections]);
 
   return (
     <div className="h-full">

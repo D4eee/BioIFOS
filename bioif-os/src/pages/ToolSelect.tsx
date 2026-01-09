@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Package, FileInput, Link2, Network, Star } from "lucide-react";
+import { Search, Package, Link2, Network, Star } from "lucide-react";
 import {
   listWorkflows,
   getWorkflow,
@@ -10,8 +10,6 @@ import {
   updateFavorites,
   getToolMeta,
   updateToolMeta,
-  getBfsRoot,
-  listBfs,
   type WorkflowFile,
   type ToolListItem,
 } from "@/app/api";
@@ -89,12 +87,6 @@ export default function ToolSelect() {
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [pendingLink, setPendingLink] = useState<{ fromId: string; x: number; y: number } | null>(null);
   const [spaceName, setSpaceName] = useState("QC Workflow");
-  const [folderPicker, setFolderPicker] = useState<{ nodeId: string; mode: "input" | "output" } | null>(null);
-  const [bfsRoot, setBfsRoot] = useState("");
-  const [bfsPath, setBfsPath] = useState("");
-  const [bfsEntries, setBfsEntries] = useState<
-    { name: string; path: string; kind: "file" | "dir"; size?: string; modified: string; typeLabel: string }[]
-  >([]);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
@@ -246,36 +238,6 @@ export default function ToolSelect() {
       window.removeEventListener("keydown", onKey);
     };
   }, [toolInspector]);
-
-  useEffect(() => {
-    if (!folderPicker) return;
-    let active = true;
-    getBfsRoot()
-      .then((data) => {
-        if (!active) return;
-        const root = data.root ?? "/";
-        setBfsRoot(root);
-        setBfsPath(root);
-        return listBfs(root);
-      })
-      .then((data) => {
-        if (!active || !data) return;
-        setBfsEntries(data.entries ?? []);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [folderPicker]);
-
-  const openBfsPath = (path: string) => {
-    listBfs(path)
-      .then((data) => {
-        setBfsPath(data.path ?? path);
-        setBfsEntries(data.entries ?? []);
-      })
-      .catch(() => {});
-  };
 
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -907,22 +869,42 @@ export default function ToolSelect() {
 
                       {!node.collapsed && (
                         <div className="mt-2 space-y-2 text-[11px] text-zinc-500">
-                          <button
-                            className="flex w-full items-center gap-1 rounded-md border border-white/60 bg-white/50 px-2 py-1 text-[11px] text-zinc-600 hover:bg-white/80"
-                            onClick={() => setFolderPicker({ nodeId: node.id, mode: "input" })}
-                          >
-                            <FileInput className="h-3.5 w-3.5" />
-                            选择输入文件夹
-                          </button>
-                          {node.inputFolder && <div className="truncate">{node.inputFolder}</div>}
-                          <button
-                            className="flex w-full items-center gap-1 rounded-md border border-white/60 bg-white/50 px-2 py-1 text-[11px] text-zinc-600 hover:bg-white/80"
-                            onClick={() => setFolderPicker({ nodeId: node.id, mode: "output" })}
-                          >
-                            <FileInput className="h-3.5 w-3.5" />
-                            选择输出文件夹
-                          </button>
-                          {node.outputFolder && <div className="truncate">{node.outputFolder}</div>}
+                          <div>
+                            <div className="mb-1 text-[10px] text-zinc-500">命名输入文件夹</div>
+                            <input
+                              value={node.inputFolder ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setNodes((prev) =>
+                                  prev.map((item) =>
+                                    item.id === node.id
+                                      ? { ...item, inputFolder: value.trim() ? value : undefined }
+                                      : item
+                                  )
+                                );
+                              }}
+                              placeholder="例如 raw_data"
+                              className="w-full rounded-md border border-white/60 bg-white/70 px-2 py-1 text-[11px] text-zinc-600 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <div className="mb-1 text-[10px] text-zinc-500">命名输出文件夹</div>
+                            <input
+                              value={node.outputFolder ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setNodes((prev) =>
+                                  prev.map((item) =>
+                                    item.id === node.id
+                                      ? { ...item, outputFolder: value.trim() ? value : undefined }
+                                      : item
+                                  )
+                                );
+                              }}
+                              placeholder="例如 qc_output"
+                              className="w-full rounded-md border border-white/60 bg-white/70 px-2 py-1 text-[11px] text-zinc-600 outline-none"
+                            />
+                          </div>
                         </div>
                       )}
 
@@ -939,18 +921,10 @@ export default function ToolSelect() {
                           title="输入"
                           onMouseUp={() => {
                             if (!pendingLink) return;
-                            const fromNode = nodes.find((item) => item.id === pendingLink.fromId);
                             setConnections((prev) => [
                               ...prev,
                               { id: uid(), fromId: pendingLink.fromId, toId: node.id },
                             ]);
-                            if (fromNode?.outputFolder) {
-                              setNodes((prev) =>
-                                prev.map((item) =>
-                                  item.id === node.id ? { ...item, inputFolder: fromNode.outputFolder } : item
-                                )
-                              );
-                            }
                             setPendingLink(null);
                           }}
                         />
@@ -1044,71 +1018,6 @@ export default function ToolSelect() {
           }}
         />
       </div>
-      {folderPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm">
-          <div className="w-[380px] rounded-2xl border border-white/40 bg-white/80 p-4 shadow-xl">
-            <div className="mb-2 text-sm font-semibold text-zinc-800">
-              {folderPicker.mode === "input" ? "选择输入文件夹" : "选择输出文件夹"}
-            </div>
-            <div className="mb-2 rounded-lg border border-white/60 bg-white/70 px-2 py-1 text-[10px] text-zinc-500">
-              {bfsPath || "加载中..."}
-            </div>
-            <div className="max-h-64 space-y-2 overflow-auto rounded-lg border border-white/60 bg-white/70 p-2 text-xs text-zinc-600">
-              {bfsPath && bfsRoot && bfsPath !== bfsRoot && (
-                <button
-                  className="w-full rounded-md px-2 py-1 text-left hover:bg-white"
-                  onClick={() => {
-                    const parent = bfsPath.split("/").slice(0, -1).join("/") || bfsRoot;
-                    openBfsPath(parent);
-                  }}
-                >
-                  ..
-                </button>
-              )}
-              {bfsEntries.map((entry) => (
-                <button
-                  key={entry.path}
-                  className="w-full rounded-md px-2 py-1 text-left hover:bg-white"
-                  onClick={() => {
-                    if (entry.kind === "dir") {
-                      openBfsPath(entry.path);
-                    }
-                  }}
-                >
-                  {entry.kind === "dir" ? "📁 " : "📄 "}
-                  {entry.name}
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 flex justify-between">
-              <button
-                className="rounded-md border border-emerald-400/60 bg-emerald-500/80 px-3 py-1 text-xs text-white hover:bg-emerald-500"
-                onClick={() => {
-                  if (!bfsPath) return;
-                  setNodes((prev) =>
-                    prev.map((item) =>
-                      item.id === folderPicker.nodeId
-                        ? folderPicker.mode === "input"
-                          ? { ...item, inputFolder: bfsPath }
-                          : { ...item, outputFolder: bfsPath }
-                        : item
-                    )
-                  );
-                  setFolderPicker(null);
-                }}
-              >
-                选择当前目录
-              </button>
-              <button
-                className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-50"
-                onClick={() => setFolderPicker(null)}
-              >
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {toolInspector && (
         <div
           ref={inspectorRef}

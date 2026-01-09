@@ -11,7 +11,7 @@ type CurlSegment = {
   type: "text" | "param";
   value: string;
   color?: string;
-  inputType?: "text" | "number" | "boolean" | "path";
+  inputType?: "text" | "number" | "boolean" | "path" | "file_in" | "file_out";
   defaultValue?: string;
 };
 
@@ -48,7 +48,9 @@ export default function ToolBuilder() {
   const [paramCount, setParamCount] = useState(1);
   const [editingParam, setEditingParam] = useState<CurlSegment | null>(null);
   const [paramLabelDraft, setParamLabelDraft] = useState("");
-  const [paramTypeDraft, setParamTypeDraft] = useState<"text" | "number" | "boolean" | "path">("text");
+  const [paramTypeDraft, setParamTypeDraft] = useState<
+    "text" | "number" | "boolean" | "path" | "file_in" | "file_out"
+  >("text");
   const [workspaceHeight, setWorkspaceHeight] = useState(560);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
@@ -589,7 +591,14 @@ export default function ToolBuilder() {
                   {curlSegments
                     .filter((segment) => segment.type === "param")
                     .map((segment) => {
-                      const previewValue = paramValues[segment.value] ?? segment.defaultValue ?? "";
+                      const isFileInput = segment.inputType === "file_in";
+                      const isFileOutput = segment.inputType === "file_out";
+                      const previewValue =
+                        isFileInput
+                          ? "自动绑定输入文件夹"
+                          : isFileOutput
+                            ? "自动绑定输出文件夹"
+                            : paramValues[segment.value] ?? segment.defaultValue ?? "";
                       const widthCh = Math.max(6, previewValue.length || 1);
                       return (
                         <label key={segment.id} className="flex items-center gap-2 text-[11px] text-zinc-500">
@@ -601,9 +610,15 @@ export default function ToolBuilder() {
                             onChange={(e) =>
                               setParamValues((prev) => ({ ...prev, [segment.value]: e.target.value }))
                             }
+                            disabled={isFileInput || isFileOutput}
                             size={widthCh}
                             style={{ width: `calc(${widthCh}ch + 16px)` }}
-                            className="h-9 rounded-full border border-white/70 bg-white/90 px-3 text-xs text-zinc-700 outline-none"
+                            className={[
+                              "h-9 rounded-full border px-3 text-xs outline-none",
+                              isFileInput || isFileOutput
+                                ? "border-amber-300/60 bg-amber-50 text-amber-700"
+                                : "border-white/70 bg-white/90 text-zinc-700",
+                            ].join(" ")}
                           />
                         </label>
                       );
@@ -615,9 +630,13 @@ export default function ToolBuilder() {
                     .map((segment) =>
                       segment.type === "text"
                         ? segment.value
-                        : paramValues[segment.value] ??
-                          segment.defaultValue ??
-                          `{{${PARAM_PREFIX}${segment.value}}}`,
+                        : segment.inputType === "file_in"
+                          ? "$INPUT_DIRS"
+                          : segment.inputType === "file_out"
+                            ? "$OUTPUT_DIR"
+                            : paramValues[segment.value] ??
+                              segment.defaultValue ??
+                              `{{${PARAM_PREFIX}${segment.value}}}`,
                     )
                     .join("")}
                   className="mt-3 h-20 w-full resize-none rounded-md border border-white/70 bg-zinc-50 p-2 text-xs text-zinc-700 outline-none"
@@ -667,7 +686,9 @@ export default function ToolBuilder() {
                       <select
                         value={paramTypeDraft}
                         onChange={(e) =>
-                          setParamTypeDraft(e.target.value as "text" | "number" | "boolean" | "path")
+                          setParamTypeDraft(
+                            e.target.value as "text" | "number" | "boolean" | "path" | "file_in" | "file_out",
+                          )
                         }
                         className="w-full rounded-lg border border-white/70 bg-white/90 px-3 py-2 text-xs text-zinc-700 outline-none"
                       >
@@ -675,6 +696,8 @@ export default function ToolBuilder() {
                         <option value="number">数字</option>
                         <option value="boolean">布尔</option>
                         <option value="path">文件目录</option>
+                        <option value="file_in">文件输入</option>
+                        <option value="file_out">文件输出</option>
                       </select>
                     </div>
                   </div>
