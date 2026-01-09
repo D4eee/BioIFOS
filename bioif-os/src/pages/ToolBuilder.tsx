@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Folder, FileText, Plus } from "lucide-react";
-import { readNodeFile, listNodeStorage, updateToolMeta } from "@/app/api";
+import { readNodeFile, listNodeStorage, updateToolMeta, deleteFs } from "@/app/api";
 
 const ROOT_PATH = "/data/shared/nodes";
 const PARAM_PREFIX = "VariP:";
@@ -55,6 +55,7 @@ export default function ToolBuilder() {
   const [workspaceHeight, setWorkspaceHeight] = useState(560);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
+  const [toolQuery, setToolQuery] = useState("");
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -102,9 +103,9 @@ export default function ToolBuilder() {
     };
   }, []);
 
-  useEffect(() => {
+  const loadEntries = (path: string) => {
     let active = true;
-    listNodeStorage(currentDir)
+    listNodeStorage(path)
       .then((data) => {
         if (!active) return;
         setEntries(data.entries ?? []);
@@ -119,7 +120,17 @@ export default function ToolBuilder() {
     return () => {
       active = false;
     };
+  };
+
+  useEffect(() => {
+    return loadEntries(currentDir);
   }, [currentDir]);
+
+  const filteredEntries = useMemo(() => {
+    const keyword = toolQuery.trim().toLowerCase();
+    if (!keyword) return entries;
+    return entries.filter((item) => item.type === "file" && item.name.toLowerCase().includes(keyword));
+  }, [entries, toolQuery]);
 
   const saveTool = () => {
     const missing = new Set<string>();
@@ -297,14 +308,14 @@ export default function ToolBuilder() {
                 <div className="font-semibold uppercase tracking-widest text-zinc-500">文件浏览</div>
                 <div className="ml-3 text-[10px] text-zinc-500">新建的工具将会保存在这个目录下</div>
               </div>
-              <div className="mb-1 rounded-lg border border-white/60 bg-white/70 px-2 py-1 text-[10px] text-zinc-500">
-                {currentDir}
-              </div>
-              <div className="mb-2 rounded-lg border border-white/50 bg-white/60 px-2 py-1 text-[10px] text-zinc-500">
-                {actualDir || "未找到实际路径"}
-              </div>
+              <input
+                value={toolQuery}
+                onChange={(e) => setToolQuery(e.target.value)}
+                className="mb-2 w-full rounded-lg border border-white/60 bg-white/70 px-2 py-1 text-[11px] text-zinc-600 outline-none"
+                placeholder="搜索工具名称"
+              />
               <div className="flex-1 overflow-auto rounded-lg border border-white/50 bg-white/70 p-2 text-sm text-zinc-700">
-                {currentDir !== ROOT_PATH && (
+                {!toolQuery && currentDir !== ROOT_PATH && (
                   <button
                     className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-white"
                     onClick={() => {
@@ -316,75 +327,94 @@ export default function ToolBuilder() {
                     <span>..</span>
                   </button>
                 )}
-                {entries.map((item) => (
-                  <button
-                    key={item.name}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-white"
-                    onClick={() => {
-                      if (item.type === "dir") {
-                        setCurrentDir(`${currentDir}/${item.name}`.replace("//", "/"));
-                      }
-                    }}
-                    onDoubleClick={() => {
-                      if (item.type !== "file") return;
-                      readNodeFile(currentDir, item.name)
-                        .then((meta) => {
-                          setToolId(meta.id ?? "");
-                          setToolName(meta.name ?? "");
-                          setToolDesc(meta.description ?? "");
-                          setToolParams(meta.paramDescription ?? "");
-                          setToolSource(meta.source ?? "");
-                          setCurlSegments(() => {
-                            const segments: CurlSegment[] = [];
-                            const template = meta.curlTemplate ?? "";
-                            const matches = template.split(/(\{\{[^}]+\}\})/g).filter(Boolean);
-                            if (!matches.length) {
-                              segments.push({ id: "text-0", type: "text", value: template });
-                              return segments;
-                            }
-                            let textIndex = 0;
-                            let paramIndex = 0;
-                            matches.forEach((part) => {
-                              const match = part.match(/^\{\{(.+)\}\}$/);
-                              if (match) {
-                                const rawKey = match[1].trim();
-                                const key = rawKey.startsWith(PARAM_PREFIX)
-                                  ? rawKey.slice(PARAM_PREFIX.length)
-                                  : rawKey;
-                                const param = meta.params?.find((p) => p.key === key);
-                                segments.push({
-                                  id: `param-${paramIndex++}`,
-                                  type: "param",
-                                  value: key,
-                                  color: param?.color ?? "#64748b",
-                                  inputType: param?.type ?? "text",
-                                  defaultValue: param?.default ?? "",
-                                });
-                              } else {
-                                segments.push({ id: `text-${textIndex++}`, type: "text", value: part });
+                {filteredEntries.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between gap-2 rounded-md px-2 py-1 hover:bg-white">
+                    <button
+                      className="flex flex-1 items-center gap-2 text-left"
+                      onClick={() => {
+                        if (item.type === "dir") {
+                          setCurrentDir(`${currentDir}/${item.name}`.replace("//", "/"));
+                        }
+                      }}
+                      onDoubleClick={() => {
+                        if (item.type !== "file") return;
+                        readNodeFile(currentDir, item.name)
+                          .then((meta) => {
+                            setToolId(meta.id ?? "");
+                            setToolName(meta.name ?? "");
+                            setToolDesc(meta.description ?? "");
+                            setToolParams(meta.paramDescription ?? "");
+                            setToolSource(meta.source ?? "");
+                            setCurlSegments(() => {
+                              const segments: CurlSegment[] = [];
+                              const template = meta.curlTemplate ?? "";
+                              const matches = template.split(/(\{\{[^}]+\}\})/g).filter(Boolean);
+                              if (!matches.length) {
+                                segments.push({ id: "text-0", type: "text", value: template });
+                                return segments;
                               }
+                              let textIndex = 0;
+                              let paramIndex = 0;
+                              matches.forEach((part) => {
+                                const match = part.match(/^\{\{(.+)\}\}$/);
+                                if (match) {
+                                  const rawKey = match[1].trim();
+                                  const key = rawKey.startsWith(PARAM_PREFIX)
+                                    ? rawKey.slice(PARAM_PREFIX.length)
+                                    : rawKey;
+                                  const param = meta.params?.find((p) => p.key === key);
+                                  segments.push({
+                                    id: `param-${paramIndex++}`,
+                                    type: "param",
+                                    value: key,
+                                    color: param?.color ?? "#64748b",
+                                    inputType: param?.type ?? "text",
+                                    defaultValue: param?.default ?? "",
+                                  });
+                                } else {
+                                  segments.push({ id: `text-${textIndex++}`, type: "text", value: part });
+                                }
+                              });
+                              return segments;
                             });
-                            return segments;
-                          });
-                          setParamCount((meta.params?.length ?? 0) + 1);
-                          setParamValues(
-                            (meta.params ?? []).reduce<Record<string, string>>((acc, param) => {
-                              acc[param.key] = param.default ?? "";
-                              return acc;
-                            }, {}),
-                          );
-                          setInvalidFields(new Set());
-                        })
-                        .catch(() => {});
-                    }}
-                  >
-                    {item.type === "dir" ? (
-                      <Folder className="h-4 w-4 text-amber-500" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-sky-500" />
+                            setParamCount((meta.params?.length ?? 0) + 1);
+                            setParamValues(
+                              (meta.params ?? []).reduce<Record<string, string>>((acc, param) => {
+                                acc[param.key] = param.default ?? "";
+                                return acc;
+                              }, {}),
+                            );
+                            setInvalidFields(new Set());
+                          })
+                          .catch(() => {});
+                      }}
+                    >
+                      {item.type === "dir" ? (
+                        <Folder className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-sky-500" />
+                      )}
+                      <span>{item.name}</span>
+                    </button>
+                    {item.type === "file" && (
+                      <button
+                        className="h-5 w-5 rounded-full border border-rose-300 text-[11px] text-rose-500 hover:bg-rose-50"
+                        title="删除工具"
+                        onClick={() => {
+                          if (!actualDir) return;
+                          const target = `${actualDir}/${item.name}`.replace("//", "/");
+                          if (!window.confirm(`确认删除 ${item.name} 吗？`)) return;
+                          deleteFs(target)
+                            .then(() => {
+                              loadEntries(currentDir);
+                            })
+                            .catch(() => {});
+                        }}
+                      >
+                        ×
+                      </button>
                     )}
-                    <span>{item.name}</span>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
