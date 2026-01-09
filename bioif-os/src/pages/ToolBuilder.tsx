@@ -35,6 +35,7 @@ export default function ToolBuilder() {
   const [toolName, setToolName] = useState("");
   const [toolDesc, setToolDesc] = useState("");
   const [toolParams, setToolParams] = useState("");
+  const [toolSource, setToolSource] = useState("");
   const [currentDir, setCurrentDir] = useState(ROOT_PATH);
   const [entries, setEntries] = useState<{ type: "dir" | "file"; name: string }[]>([]);
   const [actualDir, setActualDir] = useState("");
@@ -159,6 +160,7 @@ export default function ToolBuilder() {
       curlTemplate: serializedCurl.trim(),
       description: toolDesc.trim(),
       paramDescription: toolParams.trim(),
+      source: toolSource.trim(),
       params: paramSegments.map((segment) => ({
         key: segment.value,
         label: segment.value,
@@ -174,6 +176,7 @@ export default function ToolBuilder() {
         setToolName("");
         setToolDesc("");
         setToolParams("");
+        setToolSource("");
         setCurlSegments([{ id: "text-0", type: "text", value: "" }]);
         setActiveTextId(null);
         setCaretPos(0);
@@ -330,6 +333,7 @@ export default function ToolBuilder() {
                           setToolName(meta.name ?? "");
                           setToolDesc(meta.description ?? "");
                           setToolParams(meta.paramDescription ?? "");
+                          setToolSource(meta.source ?? "");
                           setCurlSegments(() => {
                             const segments: CurlSegment[] = [];
                             const template = meta.curlTemplate ?? "";
@@ -450,6 +454,15 @@ export default function ToolBuilder() {
                           ? "border-rose-400 bg-rose-50/70"
                           : "border-white/60 bg-white/80",
                       ].join(" ")}
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[10px] text-zinc-500">工具来源</div>
+                    <input
+                      value={toolSource}
+                      onChange={(e) => setToolSource(e.target.value)}
+                      className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm text-zinc-700 outline-none"
+                      placeholder="如：自研 / 第三方 / 论文来源"
                     />
                   </div>
                 </div>
@@ -649,6 +662,7 @@ export default function ToolBuilder() {
                     setToolName("");
                     setToolDesc("");
                     setToolParams("");
+                    setToolSource("");
                     setCurlSegments([{ id: "text-0", type: "text", value: "" }]);
                     setActiveTextId(null);
                     setCaretPos(0);

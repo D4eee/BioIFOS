@@ -16,6 +16,7 @@ export type ToolMeta = {
   curlTemplate: string;
   description: string;
   paramDescription: string;
+  source?: string;
   params: {
     key: string;
     label: string;
@@ -42,6 +43,7 @@ export type ToolListItem = {
   name: string;
   group?: string;
   tags?: string[];
+  source?: string;
 };
 
 export type ToolListResponse = {

@@ -18,6 +18,7 @@ type ToolDef = {
   id: string;
   name: string;
   group: string;
+  source?: string;
   tags: string[];
   defaultDesc: string;
 };
@@ -109,6 +110,7 @@ export default function ToolSelect() {
         id: tool.id,
         name: tool.name,
         group: tool.group ?? "",
+        source: tool.source ?? "",
         tags: tool.tags ?? [],
         defaultDesc: "",
       })),
@@ -246,6 +248,7 @@ export default function ToolSelect() {
       return (
         tool.name.toLowerCase().includes(keyword) ||
         tool.group.toLowerCase().includes(keyword) ||
+        tool.source?.toLowerCase().includes(keyword) ||
         tool.tags.some((tag) => tag.toLowerCase().includes(keyword))
       );
     });
