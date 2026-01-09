@@ -6,6 +6,7 @@ import type { AppPageType, AppTab, FloatingWindow } from "@/app/types";
 import { useLocalStorageState } from "@/app/useLocalStorageState";
 
 import FileManager from "@/pages/FileManager";
+import SimpleAccess from "@/pages/SimpleAccess";
 import FilePreview from "@/pages/FilePreview";
 import CurrentTasks from "@/pages/CurrentTasks";
 import ScriptOps from "@/pages/ScriptOps";
@@ -38,6 +39,7 @@ function uid() {
 
 const RENDER: Record<AppPageType, React.FC> = {
   fileManager: FileManager,
+  simpleAccess: SimpleAccess,
   filePreview: FilePreview,
   currentTasks: CurrentTasks,
   scriptOps: ScriptOps,

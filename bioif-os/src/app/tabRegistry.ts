@@ -5,6 +5,7 @@ type Language = "zh" | "en";
 const PAGE_TITLES: Record<Language, Record<AppPageType, string>> = {
   zh: {
     fileManager: "文件管理",
+    simpleAccess: "简单访问",
     filePreview: "文件预览",
     toolSelect: "流程逻辑",
     currentTasks: "当前任务",
@@ -17,6 +18,7 @@ const PAGE_TITLES: Record<Language, Record<AppPageType, string>> = {
   },
   en: {
     fileManager: "File Manager",
+    simpleAccess: "Simple Access",
     filePreview: "File Preview",
     toolSelect: "Logic Flow",
     currentTasks: "Current Tasks",
@@ -37,6 +39,7 @@ export function getSidebarItems(language: Language) {
   const titles = getPageTitles(language);
   return [
     { type: "fileManager", label: titles.fileManager },
+    { type: "simpleAccess", label: titles.simpleAccess },
     { type: "toolBuilder", label: titles.toolBuilder },
     { type: "toolSelect", label: titles.toolSelect },
     { type: "currentTasks", label: titles.currentTasks },

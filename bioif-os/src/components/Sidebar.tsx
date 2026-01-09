@@ -11,6 +11,7 @@ import {
   Hammer,
   Sparkles,
   TerminalSquare,
+  Terminal,
   FileText,
   FileSearch,
   Settings as SettingsIcon,
@@ -21,6 +22,7 @@ import {
 
 const ICONS: Record<AppPageType, React.FC<{ className?: string }>> = {
   fileManager: Folder,
+  simpleAccess: Terminal,
   filePreview: FileSearch,
   currentTasks: Activity,
   scriptOps: FileText,

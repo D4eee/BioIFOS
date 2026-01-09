@@ -1,5 +1,6 @@
 export type AppPageType =
   | "fileManager"
+  | "simpleAccess"
   | "filePreview"
   | "toolSelect"
   | "currentTasks"
