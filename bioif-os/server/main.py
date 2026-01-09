@@ -23,7 +23,6 @@ from .auth import (
     update_password,
     update_username,
     update_bfs_credentials,
-    clear_bfs_credentials,
     verify_password,
 )
 
@@ -394,7 +393,6 @@ async def get_bfs_root(current_user: Dict[str, Any] = Depends(require_user)):
 async def list_bfs(path: Optional[str] = None, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.list_dir(path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -404,7 +402,6 @@ async def list_bfs(path: Optional[str] = None, current_user: Dict[str, Any] = De
 async def mkdir_bfs(payload: BfsPathPayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.make_dir(payload.path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -414,7 +411,6 @@ async def mkdir_bfs(payload: BfsPathPayload, current_user: Dict[str, Any] = Depe
 async def delete_bfs(payload: BfsPathPayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.delete_path(payload.path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -424,7 +420,6 @@ async def delete_bfs(payload: BfsPathPayload, current_user: Dict[str, Any] = Dep
 async def rename_bfs(payload: BfsRenamePayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.rename_path(payload.path, payload.name, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -434,7 +429,6 @@ async def rename_bfs(payload: BfsRenamePayload, current_user: Dict[str, Any] = D
 async def move_bfs(payload: BfsMovePayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.move_path(payload.src, payload.dst, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -452,7 +446,6 @@ async def upload_bfs(
         raise HTTPException(status_code=400, detail="missing_filename")
     try:
         data = bfs.upload_file(path, target_name, file.file, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -462,7 +455,6 @@ async def upload_bfs(
 async def read_bfs(path: str, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.read_text(path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -500,7 +492,6 @@ async def get_bfs_scripts_root(current_user: Dict[str, Any] = Depends(require_us
 async def list_bfs_scripts(path: Optional[str] = None, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.list_dir_under(bfs.get_scripts_root(), path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -510,7 +501,6 @@ async def list_bfs_scripts(path: Optional[str] = None, current_user: Dict[str, A
 async def read_bfs_script(path: str, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.read_text_under(bfs.get_scripts_root(), path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -522,7 +512,6 @@ async def write_bfs_script(payload: BfsWritePayload, current_user: Dict[str, Any
         data = bfs.write_text_under(
             bfs.get_scripts_root(), payload.path, payload.content, auth=_auth_from_user(current_user)
         )
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -532,7 +521,6 @@ async def write_bfs_script(payload: BfsWritePayload, current_user: Dict[str, Any
 async def mkdir_bfs_scripts(payload: BfsPathPayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.make_dir_under(bfs.get_scripts_root(), payload.path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -542,7 +530,6 @@ async def mkdir_bfs_scripts(payload: BfsPathPayload, current_user: Dict[str, Any
 async def delete_bfs_scripts(payload: BfsPathPayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.delete_path_under(bfs.get_scripts_root(), payload.path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -554,7 +541,6 @@ async def rename_bfs_scripts(payload: BfsRenamePayload, current_user: Dict[str, 
         data = bfs.rename_path_under(
             bfs.get_scripts_root(), payload.path, payload.name, auth=_auth_from_user(current_user)
         )
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -564,7 +550,6 @@ async def rename_bfs_scripts(payload: BfsRenamePayload, current_user: Dict[str, 
 async def move_bfs_scripts(payload: BfsMovePayload, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.move_path_under(bfs.get_scripts_root(), payload.src, payload.dst, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -584,7 +569,6 @@ async def upload_bfs_script(
         data = bfs.upload_file_under(
             bfs.get_scripts_root(), path, target_name, file.file, auth=_auth_from_user(current_user)
         )
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -602,7 +586,6 @@ async def get_bfs_logs_root(current_user: Dict[str, Any] = Depends(require_user)
 async def list_bfs_logs(path: Optional[str] = None, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.list_dir_under(bfs.get_logs_root(), path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -612,7 +595,6 @@ async def list_bfs_logs(path: Optional[str] = None, current_user: Dict[str, Any]
 async def read_bfs_log(path: str, current_user: Dict[str, Any] = Depends(require_user)):
     try:
         data = bfs.read_text_under(bfs.get_logs_root(), path, auth=_auth_from_user(current_user))
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -625,7 +607,6 @@ async def bfs_system(current_user: Dict[str, Any] = Depends(require_user)):
         uptime = bfs.exec_command("uptime", auth=auth)
         mem = bfs.exec_command("free -m", auth=auth)
         disk = bfs.exec_command("df -h", auth=auth)
-        clear_bfs_credentials(current_user["id"])
         return {"uptime": uptime, "memory": mem, "disk": disk}
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -637,7 +618,6 @@ async def bfs_running_tasks(current_user: Dict[str, Any] = Depends(require_user)
         data = bfs.exec_command(
             "ps -eo pid,pcpu,pmem,comm,args --sort=-pcpu | head -n 50", auth=_auth_from_user(current_user)
         )
-        clear_bfs_credentials(current_user["id"])
         return data
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -687,8 +667,6 @@ async def bfs_terminal(websocket: WebSocket):
             client.close()
         except Exception:
             pass
-        if user.get("id"):
-            clear_bfs_credentials(user["id"])
         read_task.cancel()
 
 
