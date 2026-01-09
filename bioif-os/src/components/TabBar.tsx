@@ -72,7 +72,7 @@ function SortableTab({
         "group relative h-full flex items-center gap-2 px-3 text-sm",
         // 让 tab 自己不被压缩到 0；溢出时走横向滚动 + 更多菜单
         "flex-none",
-        "min-w-[120px] max-w-[200px]",
+        "w-40",
         "select-none",
 
         // 未激活：浅灰；激活：白

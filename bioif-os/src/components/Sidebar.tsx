@@ -3,6 +3,7 @@ import type { AppPageType } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSettings } from "@/app/useAppSettings";
+import { useRef } from "react";
 import {
   Folder,
   Activity,
@@ -45,11 +46,12 @@ export default function Sidebar({
   collapsedWidth: number;
   onToggleCollapsed: () => void;
   onStartResizeDrag: (e: React.MouseEvent) => void;
-  onOpenTab: (t: AppPageType) => void;
+  onOpenTab: (t: AppPageType, forceNew?: boolean) => void;
   username: string;
 }) {
   const { settings } = useAppSettings();
   const sidebarWidth = collapsed ? collapsedWidth : width;
+  const clickTimerRef = useRef<number | null>(null);
 
   return (
     <div
@@ -93,7 +95,22 @@ export default function Sidebar({
             <button
               key={it.type}
               title={collapsed ? it.label : undefined}
-              onClick={() => onOpenTab(it.type)}
+              onClick={() => {
+                if (clickTimerRef.current) {
+                  window.clearTimeout(clickTimerRef.current);
+                }
+                clickTimerRef.current = window.setTimeout(() => {
+                  onOpenTab(it.type);
+                  clickTimerRef.current = null;
+                }, 220);
+              }}
+              onDoubleClick={() => {
+                if (clickTimerRef.current) {
+                  window.clearTimeout(clickTimerRef.current);
+                  clickTimerRef.current = null;
+                }
+                onOpenTab(it.type, true);
+              }}
               className={cn(
                 "w-full rounded-xl px-3 py-2 text-left text-sm",
                 "text-zinc-200 hover:bg-zinc-900 hover:text-white transition-colors",

@@ -130,7 +130,16 @@ function AppShellInner() {
     return count === 0 ? base : `${base}-${count + 1}`;
   };
 
-  const openTab = (type: AppPageType) => {
+  const openTab = (type: AppPageType, forceNew = false) => {
+    if (!forceNew) {
+      for (let i = state.tabs.length - 1; i >= 0; i -= 1) {
+        const tab = state.tabs[i];
+        if (tab.type === type) {
+          setState({ ...state, activeTabId: tab.id });
+          return;
+        }
+      }
+    }
     const tab: AppTab = { id: uid(), type, title: makeTitle(type), createdAt: Date.now() };
     setState({ ...state, tabs: [...state.tabs, tab], activeTabId: tab.id });
   };
