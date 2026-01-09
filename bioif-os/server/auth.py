@@ -99,6 +99,9 @@ def update_password(user_id: str, password: str) -> Dict[str, Any]:
 def update_bfs_credentials(
     user_id: str,
     bfs_auth_type: str,
+    bfs_host: str,
+    bfs_port: str,
+    bfs_root: str,
     bfs_user: str,
     bfs_pass: str,
     bfs_key: str,
@@ -108,6 +111,9 @@ def update_bfs_credentials(
     for user in data.get("users", []):
         if user.get("id") == user_id:
             user["bfsAuthType"] = bfs_auth_type
+            user["bfsHost"] = bfs_host
+            user["bfsPort"] = bfs_port
+            user["bfsRoot"] = bfs_root
             user["bfsUser"] = bfs_user
             user["bfsPass"] = bfs_pass
             user["bfsKey"] = bfs_key
@@ -122,6 +128,9 @@ def clear_bfs_credentials(user_id: str) -> None:
     for user in data.get("users", []):
         if user.get("id") == user_id:
             user["bfsAuthType"] = "password"
+            user["bfsHost"] = ""
+            user["bfsPort"] = ""
+            user["bfsRoot"] = ""
             user["bfsUser"] = ""
             user["bfsPass"] = ""
             user["bfsKey"] = ""

@@ -138,13 +138,23 @@ export function authUpdate(payload: { username?: string; currentPassword: string
 }
 
 export function getBfsCredentials() {
-  return requestJson<{ bfsAuthType: string; bfsUser: string; bfsPass: string; bfsKey: string; bfsKeyPass: string }>(
-    "/auth/bfs",
-  );
+  return requestJson<{
+    bfsAuthType: string;
+    bfsHost: string;
+    bfsPort: string;
+    bfsRoot: string;
+    bfsUser: string;
+    bfsPass: string;
+    bfsKey: string;
+    bfsKeyPass: string;
+  }>("/auth/bfs");
 }
 
 export function setBfsCredentials(payload: {
   bfsAuthType: string;
+  bfsHost: string;
+  bfsPort: string;
+  bfsRoot?: string;
   bfsUser?: string;
   bfsPass?: string;
   bfsKey?: string;

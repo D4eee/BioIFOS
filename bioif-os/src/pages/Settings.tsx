@@ -12,11 +12,6 @@ const LABELS: Record<Language, Record<string, string>> = {
     bApiTest: "连接测试",
     bApiOk: "连接成功",
     bApiFail: "连接失败",
-    frpTitle: "FRP 穿透（可选）",
-    frpUseMapping: "A 端通过 FRP 映射访问 B",
-    frpPublicAddr: "B 的公网映射地址（例如 tcp://x.x.x.x:7000）",
-    frpExposeFromB: "B 端允许 FRP 映射到公网端口",
-    frpPublicPort: "B 端映射端口（B 端 frps / frpc 配置）",
     themeNoir: "夜色",
     themeMist: "雾白",
     themeAmber: "暖米",
@@ -36,11 +31,6 @@ const LABELS: Record<Language, Record<string, string>> = {
     bApiTest: "Test Connection",
     bApiOk: "Connected",
     bApiFail: "Connection failed",
-    frpTitle: "FRP (optional)",
-    frpUseMapping: "Use FRP mapping from A to reach B",
-    frpPublicAddr: "B public mapped address (e.g. tcp://x.x.x.x:7000)",
-    frpExposeFromB: "Allow B to expose a mapped port via FRP",
-    frpPublicPort: "B mapped port (frps/frpc config on B)",
     themeNoir: "Noir",
     themeMist: "Mist",
     themeAmber: "Amber",
@@ -176,46 +166,6 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">
-            {labels.frpTitle}
-          </div>
-          <div className="space-y-3 text-xs text-zinc-300">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={settings.frpUseMapping}
-                onChange={(e) => updateSettings({ frpUseMapping: e.target.checked })}
-                className="h-4 w-4 rounded border border-white/20"
-              />
-              {labels.frpUseMapping}
-            </label>
-            <input
-              value={settings.frpPublicAddr}
-              onChange={(e) => updateSettings({ frpPublicAddr: e.target.value })}
-              placeholder={labels.frpPublicAddr}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-100 outline-none"
-            />
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={settings.frpExposeFromB}
-                onChange={(e) => updateSettings({ frpExposeFromB: e.target.checked })}
-                className="h-4 w-4 rounded border border-white/20"
-              />
-              {labels.frpExposeFromB}
-            </label>
-            <input
-              value={settings.frpPublicPort}
-              onChange={(e) => updateSettings({ frpPublicPort: e.target.value })}
-              placeholder={labels.frpPublicPort}
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-100 outline-none"
-            />
-            <div className="text-[11px] text-zinc-500">
-              提示：勾选后表示 A 端将优先使用 FRP 映射地址访问 B；B 端需自行配置 frps/frpc，端口放行。
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -28,12 +28,31 @@ from .auth import (
 
 
 def _auth_from_user(user: Dict[str, Any]) -> Dict[str, str]:
+    auth_type = user.get("bfsAuthType", "password")
+    bfs_host = (user.get("bfsHost") or "").strip()
+    bfs_port = (user.get("bfsPort") or "").strip()
+    bfs_root = (user.get("bfsRoot") or "").strip()
+    bfs_user = (user.get("bfsUser") or "").strip()
+    bfs_pass = user.get("bfsPass") or ""
+    bfs_key = user.get("bfsKey") or ""
+    bfs_key_pass = user.get("bfsKeyPass") or ""
+    if not bfs_host or not bfs_port:
+        raise HTTPException(status_code=400, detail="missing_bfs_credentials")
+    if auth_type == "key":
+        if not bfs_user or not bfs_key:
+            raise HTTPException(status_code=400, detail="missing_bfs_credentials")
+    else:
+        if not bfs_user or not bfs_pass:
+            raise HTTPException(status_code=400, detail="missing_bfs_credentials")
     return {
-        "type": user.get("bfsAuthType", "password"),
-        "user": user.get("bfsUser", ""),
-        "pass": user.get("bfsPass", ""),
-        "key": user.get("bfsKey", ""),
-        "keyPass": user.get("bfsKeyPass", ""),
+        "type": auth_type,
+        "host": bfs_host,
+        "port": bfs_port,
+        "root": bfs_root,
+        "user": bfs_user,
+        "pass": bfs_pass,
+        "key": bfs_key,
+        "keyPass": bfs_key_pass,
     }
 
 storage.ensure_dirs()
@@ -68,6 +87,9 @@ class AuthUpdate(BaseModel):
 
 class BfsCredentialsPayload(BaseModel):
     bfsAuthType: str
+    bfsHost: str
+    bfsPort: str
+    bfsRoot: Optional[str] = None
     bfsUser: Optional[str] = None
     bfsPass: Optional[str] = None
     bfsKey: Optional[str] = None
@@ -180,6 +202,9 @@ async def update_auth(payload: AuthUpdate, current_user: Dict[str, Any] = Depend
 async def get_bfs_credentials(current_user: Dict[str, Any] = Depends(require_user)):
     return {
         "bfsAuthType": current_user.get("bfsAuthType", "password"),
+        "bfsHost": current_user.get("bfsHost", ""),
+        "bfsPort": current_user.get("bfsPort", ""),
+        "bfsRoot": current_user.get("bfsRoot", ""),
         "bfsUser": current_user.get("bfsUser", ""),
         "bfsPass": current_user.get("bfsPass", ""),
         "bfsKey": current_user.get("bfsKey", ""),
@@ -191,6 +216,8 @@ async def get_bfs_credentials(current_user: Dict[str, Any] = Depends(require_use
 async def set_bfs_credentials(
     payload: BfsCredentialsPayload, current_user: Dict[str, Any] = Depends(require_user)
 ):
+    if not payload.bfsHost or not payload.bfsPort:
+        raise HTTPException(status_code=400, detail="missing_bfs_credentials")
     if payload.bfsAuthType == "password":
         if not payload.bfsUser or not payload.bfsPass:
             raise HTTPException(status_code=400, detail="missing_bfs_credentials")
@@ -203,6 +230,9 @@ async def set_bfs_credentials(
         update_bfs_credentials(
             current_user["id"],
             payload.bfsAuthType,
+            payload.bfsHost,
+            payload.bfsPort,
+            payload.bfsRoot or "",
             payload.bfsUser or "",
             payload.bfsPass or "",
             payload.bfsKey or "",
@@ -384,7 +414,7 @@ async def delete_command_script(script_name: str, current_user: Dict[str, Any] =
 @app.get("/api/bfs/root")
 async def get_bfs_root(current_user: Dict[str, Any] = Depends(require_user)):
     try:
-        return {"root": bfs.get_root()}
+        return {"root": bfs.get_root(auth=_auth_from_user(current_user))}
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

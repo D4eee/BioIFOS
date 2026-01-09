@@ -12,19 +12,95 @@ body,
 :root {
   --app-bg: #0b1120;
   --app-text: #e2e8f0;
+  --app-text-muted: #94a3b8;
+  --app-text-dim: #64748b;
+  --app-text-strong: #0b1120;
+  --app-border: rgba(148, 163, 184, 0.2);
+  --app-panel: rgba(255, 255, 255, 0.06);
+  --app-panel-strong: rgba(0, 0, 0, 0.45);
+  --app-surface-strong: #0f172a;
+  --app-workspace: #52525b;
 }
 
 :root[data-theme="mist"] {
   --app-bg: #f1f5f9;
   --app-text: #0f172a;
+  --app-text-muted: #475569;
+  --app-text-dim: #64748b;
+  --app-text-strong: #0f172a;
+  --app-border: rgba(15, 23, 42, 0.12);
+  --app-panel: rgba(15, 23, 42, 0.04);
+  --app-panel-strong: rgba(15, 23, 42, 0.08);
+  --app-surface-strong: #ffffff;
+  --app-workspace: #e2e8f0;
 }
 
 :root[data-theme="amber"] {
   --app-bg: #2a1b0b;
-  --app-text: #f8fafc;
+  --app-text: #fef3c7;
+  --app-text-muted: #e9c99b;
+  --app-text-dim: #caa673;
+  --app-text-strong: #3a2411;
+  --app-border: rgba(255, 231, 198, 0.25);
+  --app-panel: rgba(255, 255, 255, 0.06);
+  --app-panel-strong: rgba(0, 0, 0, 0.35);
+  --app-surface-strong: #3a2411;
+  --app-workspace: #d3b58b;
 }
 
 body {
   background: var(--app-bg);
   color: var(--app-text);
+}
+
+:root[data-theme] .bg-zinc-950 {
+  background-color: var(--app-bg);
+}
+
+:root[data-theme] .bg-zinc-900,
+:root[data-theme] .bg-zinc-900\/90,
+:root[data-theme] .bg-zinc-900\/60,
+:root[data-theme] .bg-zinc-900\/40,
+:root[data-theme] .bg-zinc-950\/90 {
+  background-color: var(--app-surface-strong);
+}
+
+:root[data-theme] .bg-zinc-500 {
+  background-color: var(--app-workspace);
+}
+
+:root[data-theme] .bg-white\/5,
+:root[data-theme] .bg-white\/10,
+:root[data-theme] .bg-white\/50 {
+  background-color: var(--app-panel);
+}
+
+:root[data-theme] .bg-black\/40,
+:root[data-theme] .bg-black\/50,
+:root[data-theme] .bg-black\/60 {
+  background-color: var(--app-panel-strong);
+}
+
+:root[data-theme] .border-zinc-800,
+:root[data-theme] .border-white\/10,
+:root[data-theme] .border-white\/20,
+:root[data-theme] .border-white\/60 {
+  border-color: var(--app-border);
+}
+
+:root[data-theme] .text-zinc-100,
+:root[data-theme] .text-zinc-200,
+:root[data-theme] .text-zinc-300 {
+  color: var(--app-text);
+}
+
+:root[data-theme] .text-zinc-400,
+:root[data-theme] .text-zinc-500,
+:root[data-theme] .text-zinc-600,
+:root[data-theme] .text-zinc-700 {
+  color: var(--app-text-muted);
+}
+
+:root[data-theme] .text-zinc-900 {
+  color: var(--app-text-strong);
 }

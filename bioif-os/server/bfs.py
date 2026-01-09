@@ -12,42 +12,34 @@ import paramiko
 
 
 def _config(auth: Optional[Dict[str, str]] = None) -> Tuple[str, int, str, str, str, str, str]:
-    host = os.getenv("BIOIFOS_B_HOST", "")
-    user = os.getenv("BIOIFOS_B_USER", "")
-    password = os.getenv("BIOIFOS_B_PASS", "")
-    port = int(os.getenv("BIOIFOS_B_PORT", "22"))
-    root = os.getenv("BIOIFOS_B_ROOT", "/")
-    if not root.startswith("/"):
-        root = f"/{root}"
+    host = ""
+    user = ""
+    password = ""
+    port = 0
+    root = ""
     key = ""
     key_pass = ""
     if auth:
-        user = auth.get("user") or user
-        password = auth.get("pass") or password
+        host = auth.get("host") or ""
+        port_value = str(auth.get("port") or "").strip()
+        port = int(port_value) if port_value.isdigit() else 0
+        root = (auth.get("root") or "").strip() or "/"
+        user = auth.get("user") or ""
+        password = auth.get("pass") or ""
         key = auth.get("key", "")
         key_pass = auth.get("keyPass", "")
-    frp_addr = os.getenv("BIOIFOS_B_FRP_ADDR", "")
-    frp_port = os.getenv("BIOIFOS_B_FRP_PORT", "")
-    frp_enabled = os.getenv("BIOIFOS_B_FRP_ENABLED", "").lower() in {"1", "true", "yes"}
-    if (frp_enabled or frp_addr or frp_port) and frp_addr:
-        # 支持 tcp://x.x.x.x:7000 或 x.x.x.x:7000
-        addr = frp_addr.replace("tcp://", "").replace("http://", "").replace("https://", "")
-        if ":" in addr:
-            frp_host, frp_port_str = addr.rsplit(":", 1)
-            host = frp_host or host
-            port = int(frp_port_str) if frp_port_str.isdigit() else port
-    if (frp_enabled or frp_port) and frp_port.isdigit():
-        port = int(frp_port)
 
-    if not host or not user:
+    if not root.startswith("/"):
+        root = f"/{root}"
+    if not host or not user or port <= 0:
         raise RuntimeError("bfs_not_configured")
     if not key and not password:
         raise RuntimeError("bfs_not_configured")
     return host, port, user, password, root, key, key_pass
 
 
-def get_root() -> str:
-    return _config()[4]
+def get_root(auth: Optional[Dict[str, str]] = None) -> str:
+    return _config(auth)[4]
 
 
 def get_scripts_root() -> str:
@@ -85,8 +77,8 @@ def _sftp_client(auth: Optional[Dict[str, str]] = None) -> Iterable[paramiko.SFT
         transport.close()
 
 
-def _normalize(path: Optional[str]) -> str:
-    _root = get_root()
+def _normalize(path: Optional[str], auth: Optional[Dict[str, str]] = None) -> str:
+    _root = get_root(auth)
     if not path:
         return _root
     if path.startswith(_root):
@@ -186,7 +178,7 @@ def _unique_path(sftp: paramiko.SFTPClient, target: str) -> str:
 
 
 def list_dir(path: Optional[str], auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     with _sftp_client(auth) as sftp:
         entries = []
         for attr in sftp.listdir_attr(target):
@@ -214,7 +206,7 @@ def list_dir_under(root: str, path: Optional[str], auth: Optional[Dict[str, str]
 
 
 def make_dir(path: str, auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     with _sftp_client(auth) as sftp:
         target = _unique_path(sftp, target)
         sftp.mkdir(target)
@@ -230,7 +222,7 @@ def make_dir_under(root: str, path: str, auth: Optional[Dict[str, str]] = None) 
 
 
 def delete_path(path: str, auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     with _sftp_client(auth) as sftp:
         attrs = sftp.stat(target)
         if stat.S_ISDIR(attrs.st_mode):
@@ -252,11 +244,11 @@ def delete_path_under(root: str, path: str, auth: Optional[Dict[str, str]] = Non
 
 
 def rename_path(path: str, name: str, auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     base = posixpath.basename(target)
     parent = posixpath.dirname(target)
     next_name = name.strip() or base
-    next_path = _normalize(posixpath.join(parent, next_name))
+    next_path = _normalize(posixpath.join(parent, next_name), auth)
     with _sftp_client(auth) as sftp:
         if next_path != target:
             next_path = _unique_path(sftp, next_path)
@@ -278,8 +270,8 @@ def rename_path_under(root: str, path: str, name: str, auth: Optional[Dict[str, 
 
 
 def move_path(src: str, dst: str, auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    source = _normalize(src)
-    target = _normalize(dst)
+    source = _normalize(src, auth)
+    target = _normalize(dst, auth)
     with _sftp_client(auth) as sftp:
         if source != target:
             try:
@@ -310,7 +302,7 @@ def move_path_under(root: str, src: str, dst: str, auth: Optional[Dict[str, str]
 
 
 def upload_file(path: str, filename: str, data: Any, auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     with _sftp_client(auth) as sftp:
         try:
             attrs = sftp.stat(target)
@@ -348,7 +340,7 @@ def read_text_under(root: str, path: str, auth: Optional[Dict[str, str]] = None)
 
 
 def read_text(path: str, auth: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     with _sftp_client(auth) as sftp:
         with sftp.open(target, "r") as handle:
             content = handle.read().decode("utf-8", errors="ignore")
@@ -391,7 +383,7 @@ def open_shell(
 
 @contextmanager
 def open_file(path: str, auth: Optional[Dict[str, str]] = None) -> Iterable[paramiko.SFTPFile]:
-    target = _normalize(path)
+    target = _normalize(path, auth)
     with _sftp_client(auth) as sftp:
         handle = sftp.open(target, "rb")
         try:

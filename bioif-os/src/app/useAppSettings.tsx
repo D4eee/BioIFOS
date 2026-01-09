@@ -9,10 +9,6 @@ export type AppSettings = {
   fontSize: number;
   language: Language;
   bApiBase: string;
-  frpUseMapping: boolean;
-  frpPublicAddr: string;
-  frpExposeFromB: boolean;
-  frpPublicPort: string;
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -20,10 +16,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 16,
   language: "zh",
   bApiBase: "",
-  frpUseMapping: false,
-  frpPublicAddr: "",
-  frpExposeFromB: false,
-  frpPublicPort: "",
 };
 
 const SETTINGS_KEY = "bioif_os_settings_v1";

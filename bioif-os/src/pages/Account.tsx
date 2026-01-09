@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { authMe, authUpdate, getBfsCredentials, setBfsCredentials } from "@/app/api";
+import { authMe, authUpdate, clearAuthToken, getBfsCredentials, setBfsCredentials } from "@/app/api";
 import { useAppSettings } from "@/app/useAppSettings";
 
 export default function Account() {
@@ -9,6 +9,9 @@ export default function Account() {
   const [newPassword, setNewPassword] = useState("");
   const [status, setStatus] = useState("");
   const [currentUser, setCurrentUser] = useState("");
+  const [bfsHost, setBfsHost] = useState("");
+  const [bfsPort, setBfsPort] = useState("");
+  const [bfsRoot, setBfsRoot] = useState("");
   const [bfsUser, setBfsUser] = useState("");
   const [bfsPass, setBfsPass] = useState("");
   const [bfsAuthType, setBfsAuthType] = useState<"password" | "key">("password");
@@ -22,6 +25,9 @@ export default function Account() {
       .catch(() => setCurrentUser(""));
     getBfsCredentials()
       .then((data) => {
+        setBfsHost(data.bfsHost || "");
+        setBfsPort(data.bfsPort || "");
+        setBfsRoot(data.bfsRoot || "");
         setBfsUser(data.bfsUser || "");
         setBfsPass(data.bfsPass || "");
         setBfsAuthType((data.bfsAuthType as "password" | "key") || "password");
@@ -29,6 +35,9 @@ export default function Account() {
         setBfsKeyPass(data.bfsKeyPass || "");
       })
       .catch(() => {
+        setBfsHost("");
+        setBfsPort("");
+        setBfsRoot("");
         setBfsUser("");
         setBfsPass("");
         setBfsAuthType("password");
@@ -72,6 +81,10 @@ export default function Account() {
 
   const saveBfs = () => {
     setBfsStatus("");
+    if (!bfsHost.trim() || !bfsPort.trim()) {
+      setBfsStatus(settings.language === "en" ? "Host and port are required." : "需要填写服务器B地址与端口。");
+      return;
+    }
     if (bfsAuthType === "password") {
       if (!bfsUser.trim() || !bfsPass.trim()) {
         setBfsStatus(settings.language === "en" ? "B credentials are required." : "需要填写服务器B账号与密码。");
@@ -86,6 +99,9 @@ export default function Account() {
     }
     setBfsCredentials({
       bfsAuthType,
+      bfsHost: bfsHost.trim(),
+      bfsPort: bfsPort.trim(),
+      bfsRoot: bfsRoot.trim(),
       bfsUser: bfsUser.trim(),
       bfsPass: bfsPass.trim(),
       bfsKey: bfsKey.trim(),
@@ -99,9 +115,22 @@ export default function Account() {
       });
   };
 
+  const handleLogout = () => {
+    clearAuthToken();
+    window.location.reload();
+  };
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6 text-zinc-100 shadow-2xl backdrop-blur">
-      <div className="text-lg font-semibold">{settings.language === "en" ? "Account" : "账号"}</div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="text-lg font-semibold">{settings.language === "en" ? "Account" : "账号"}</div>
+        <button
+          onClick={handleLogout}
+          className="rounded-full border border-rose-400/60 bg-rose-500/20 px-4 py-2 text-xs text-rose-100 hover:bg-rose-500/30"
+        >
+          {settings.language === "en" ? "Log Out" : "退出账号"}
+        </button>
+      </div>
 
       <div className="mt-6 grid gap-4">
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-zinc-300">
@@ -160,6 +189,26 @@ export default function Account() {
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-zinc-300">
           <div className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">
             {settings.language === "en" ? "Server B Credentials" : "服务器B账号"}
+          </div>
+          <div className="grid gap-2">
+            <input
+              value={bfsHost}
+              onChange={(e) => setBfsHost(e.target.value)}
+              placeholder={settings.language === "en" ? "Server B host" : "服务器B地址"}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-100 outline-none"
+            />
+            <input
+              value={bfsPort}
+              onChange={(e) => setBfsPort(e.target.value)}
+              placeholder={settings.language === "en" ? "Server B port" : "服务器B端口"}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-100 outline-none"
+            />
+            <input
+              value={bfsRoot}
+              onChange={(e) => setBfsRoot(e.target.value)}
+              placeholder={settings.language === "en" ? "Server B root (optional)" : "服务器B根目录（可选）"}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-100 outline-none"
+            />
           </div>
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {(["password", "key"] as const).map((type) => (
