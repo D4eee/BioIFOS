@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "id": "47221ad380e71566d23a3fee",
+      "username": "D4N131",
+      "password": {
+        "salt": "F0ZsOJvF9PL4VJ69RiNUsg==",
+        "hash": "OJFC73dMVAKX7OBvsj5odU5aCyg2AOO3kxK17y7SOfA=",
+        "iterations": "120000"
+      },
+      "createdAt": 1771053703835
+    }
+  ]
+}
